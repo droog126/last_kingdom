@@ -5,14 +5,22 @@ edition = "2021"
 
 [dependencies]
 # bevy = { git = "https://github.com/bevyengine/bevy.git", branch = "latest" , features = ["dynamic"]}
-# bevy =  "0.6.0"
-bevy = { version = "0.6" }
+
+bevy = { version = "0.6.1" }
+bevy_asset_loader = "0.8"
 rand = "0.8.3"
+bevy-inspector-egui = "0.8"
+
 bevy_mod_debugdump= "0.3.0"
 bevy_kira_audio = { version = "0.8" }
-bevy_asset_loader = { version = "0.8" }
 
 
+
+
+[dependencies.bevy_asset_loader_derive]
+version = "0.8"
+default-features = false
+features = ["render"]
 
 
 

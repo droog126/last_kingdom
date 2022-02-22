@@ -14,6 +14,7 @@ impl Plugin for LoadingPlugin {
             .with_collection::<FontAssets>()
             .with_collection::<AudioAssets>()
             .with_collection::<TextureAssets>()
+            .with_collection::<PlayerSheet>()
             .continue_to_state(GameState::Menu)
             .build(app);
     }
@@ -22,6 +23,8 @@ impl Plugin for LoadingPlugin {
 // the following asset collections will be loaded during the State `GameState::Loading`
 // when done loading, they will be inserted as resources (see https://github.com/NiklasEi/bevy_asset_loader)
 
+
+//这些都在Res里面
 #[derive(AssetCollection)]
 pub struct FontAssets {
     #[asset(path = "fonts/FiraSans-Bold.ttf")]
@@ -38,4 +41,17 @@ pub struct AudioAssets {
 pub struct TextureAssets {
     #[asset(path = "textures/bevy.png")]
     pub texture_bevy: Handle<Image>,
+}
+
+
+#[derive(AssetCollection)]
+pub struct PlayerSheet{
+    #[asset(texture_atlas(tile_size_x = 32., tile_size_y = 50., columns = 1, rows = 1))]
+    #[asset(path = "sprite/player_sheet.png")]
+    pub player_idle: Handle<TextureAtlas>,
+  
+  
+    #[asset(texture_atlas(tile_size_x = 32., tile_size_y = 50., columns = 8, rows = 1))]
+    #[asset(path = "sprite/player_sheet.png")]
+    pub player_walk: Handle<TextureAtlas>,
 }

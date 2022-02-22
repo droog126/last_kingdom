@@ -3,7 +3,7 @@
 
 use bevy::prelude::{App, ClearColor, Color, Msaa, WindowDescriptor};
 use bevy::DefaultPlugins;
-use last_kingdom::{FpsPlugin, GamePlugin};
+use last_kingdom::{FpsPlugin, GamePlugin, EGuiPlugin};
 
 #[cfg(debug_assertions)]
 use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
@@ -25,6 +25,7 @@ fn main() {
     #[cfg(debug_assertions)]
     {
         app.add_plugin(FpsPlugin);
+        app.add_plugin(EGuiPlugin);
     }
     app.run();
 }
