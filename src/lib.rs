@@ -19,7 +19,6 @@ use bevy::prelude::*;
 use bevy::{app::App, diagnostic::Diagnostics};
 use bevy_inspector_egui::WorldInspectorPlugin;
 
-
 // This example game uses States to separate logic
 // See https://bevy-cheatbook.github.io/programming/states.html
 // Or https://github.com/bevyengine/bevy/blob/main/examples/ecs/state.rs
@@ -42,12 +41,13 @@ impl Plugin for GamePlugin {
             .add_plugin(MenuPlugin)
             .add_plugin(ActionsPlugin)
             .add_plugin(InternalAudioPlugin)
-            .add_plugin(PlayerPlugin);
+            .add_plugin(PlayerPlugin)
+            .add_plugin(DebugPlugin);
 
         #[cfg(debug_assertions)]
         {
-            app.add_plugin(FrameTimeDiagnosticsPlugin::default())
-                .add_plugin(LogDiagnosticsPlugin::default());
+            app.add_plugin(FrameTimeDiagnosticsPlugin::default());
+            // .add_plugin(LogDiagnosticsPlugin::default());
         }
     }
 }
@@ -61,13 +61,13 @@ struct FpsText;
 impl Plugin for FpsPlugin {
     fn build(&self, app: &mut App) {
         app.add_startup_system(fps_start_system);
-        app.add_system_set(SystemSet::new()
-        .with_run_criteria(FixedTimestep::step(0.5))
-        .with_system(fps_setup_system));
+        app.add_system_set(
+            SystemSet::new()
+                .with_run_criteria(FixedTimestep::step(0.5))
+                .with_system(fps_setup_system),
+        );
         app.add_system(fps_setup_system);
     }
-
-   
 }
 fn fps_start_system(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands
@@ -108,7 +108,6 @@ fn fps_setup_system(diagnostics: Res<Diagnostics>, mut query: Query<(&mut Text, 
 }
 // fps end
 
-
 // Egui start
 pub struct EGuiPlugin;
 impl Plugin for EGuiPlugin {
@@ -119,46 +118,34 @@ impl Plugin for EGuiPlugin {
 
 // Egui end
 
-
 // Debug control start
 struct DebugPlugin;
-impl Plugin for DebugPlugin{
-    fn build(&self, app: &mut App) {
-        
-    }
-}
-
 struct DebugRes {
-    env:String
+    env: bool,
 }
-impl FromWorld for DebugRes{
+impl FromWorld for DebugRes {
     fn from_world(world: &mut World) -> Self {
-        DebugRes{
-            env:"DEV".to_string()
-        }
+        DebugRes { env: true }
     }
 }
 
-fn debug_system(actions:Res<Actions>,mut debug_res:Res<DEbugRes>){
-    println!("action",actions)
+impl Plugin for DebugPlugin {
+    fn build(&self, app: &mut App) {
+        app.init_resource::<DebugRes>();
+        app.add_system_set(SystemSet::new().with_system(debug_system));
+    }
 }
 
-fn move_player(
-    time: Res<Time>,
-    actions: Res<Actions>,
-    mut player_query: Query<&mut Transform, With<Player>>,
+fn debug_system(
+    input: Res<Input<KeyCode>>,
+    mut debug_res: ResMut<DebugRes>,
+    mut query: Query<(&mut Visibility, With<FpsText>)>,
 ) {
-    if actions.player_movement.is_none() {
-        return;
-    }
-    let speed = 150.;
-    let movement = Vec3::new(
-        actions.player_movement.unwrap().x * speed * time.delta_seconds(),
-        actions.player_movement.unwrap().y * speed * time.delta_seconds(),
-        0.,
-    );
-    for mut player_transform in player_query.iter_mut() {
-        player_transform.translation += movement;
+    if (input.just_pressed(KeyCode::F11)) {
+        debug_res.env = !debug_res.env;
+        for (mut visibility, i) in query.iter_mut() {
+            visibility.is_visible = !visibility.is_visible;
+        }
     }
 }
 
