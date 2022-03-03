@@ -1,9 +1,10 @@
+#![allow(non_snake_case)]
 // disable console on windows for release builds
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use bevy::prelude::{App, ClearColor, Color, Msaa, WindowDescriptor};
 use bevy::DefaultPlugins;
-use last_kingdom::{FpsPlugin, GamePlugin, EGuiPlugin};
+use last_kingdom::{EGuiPlugin, FpsPlugin, GamePlugin};
 
 #[cfg(debug_assertions)]
 use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};

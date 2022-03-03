@@ -1,3 +1,5 @@
+#![allow(non_snake_case)]
+
 mod actions;
 mod audio;
 mod loading;
@@ -58,6 +60,9 @@ pub struct FpsPlugin;
 #[derive(Component)]
 struct FpsText;
 
+#[derive(Component)]
+struct GameStateText;
+
 impl Plugin for FpsPlugin {
     fn build(&self, app: &mut App) {
         app.add_startup_system(fps_start_system);
@@ -70,12 +75,13 @@ impl Plugin for FpsPlugin {
     }
 }
 fn fps_start_system(mut commands: Commands, asset_server: Res<AssetServer>) {
+    // 放入函数里
     commands
         .spawn_bundle(TextBundle {
             style: Style {
                 position_type: PositionType::Absolute,
                 position: Rect {
-                    top: Val::Px(5.0),
+                    top: Val::Px(40.0),
                     left: Val::Px(5.0),
                     ..Default::default()
                 },
@@ -94,17 +100,53 @@ fn fps_start_system(mut commands: Commands, asset_server: Res<AssetServer>) {
             },
             ..Default::default()
         })
+        .insert(GameStateText);
+    commands
+        .spawn_bundle(TextBundle {
+            style: Style {
+                position_type: PositionType::Absolute,
+                position: Rect {
+                    top: Val::Px(5.0),
+                    left: Val::Px(5.0),
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
+            text: Text {
+                sections: vec![TextSection {
+                    value: "fps/\n fuck you".to_string(),
+                    style: TextStyle {
+                        font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                        font_size: 16.0,
+                        color: Color::rgb(0.0, 0.0, 0.0),
+                    },
+                }],
+                ..Default::default()
+            },
+            ..Default::default()
+        })
         .insert(FpsText);
 }
 
-fn fps_setup_system(diagnostics: Res<Diagnostics>, mut query: Query<(&mut Text, &FpsText)>) {
+fn fps_setup_system(
+    diagnostics: Res<Diagnostics>,
+    mut queries: QuerySet<(
+        QueryState<&mut Text, (With<FpsText>)>,
+        QueryState<&mut Text, (With<GameStateText>)>,
+    )>,
+    gameState: Res<State<GameState>>,
+) {
     if let Some(fps) = diagnostics.get(FrameTimeDiagnosticsPlugin::FPS) {
         if let Some(average) = fps.average() {
-            for (mut text, i) in query.iter_mut() {
-                text.sections[0].value = format!("fps:{:.2}", average);
+            for mut text in queries.q0().iter_mut() {
+                text.sections[0].value = format!("fps:{:.2}\n fuck you", average);
             }
         }
     };
+
+    for mut text in queries.q1().iter_mut() {
+        text.sections[0].value = format!("State:{:#?}", gameState)
+    }
 }
 // fps end
 
