@@ -4,10 +4,7 @@
 
 use bevy::prelude::{App, ClearColor, Color, Msaa, WindowDescriptor};
 use bevy::DefaultPlugins;
-use last_kingdom::{EGuiPlugin, FpsPlugin, GamePlugin};
-
-#[cfg(debug_assertions)]
-use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
+use last_kingdom::GamePlugin;
 
 fn main() {
     let mut app = App::new();
@@ -23,10 +20,5 @@ fn main() {
         })
         .add_plugins(DefaultPlugins)
         .add_plugin(GamePlugin);
-    #[cfg(debug_assertions)]
-    {
-        app.add_plugin(FpsPlugin);
-        app.add_plugin(EGuiPlugin);
-    }
     app.run();
 }
