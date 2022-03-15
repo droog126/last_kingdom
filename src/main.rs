@@ -2,7 +2,7 @@
 // disable console on windows for release builds
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use bevy::prelude::{App, ClearColor, Color, Msaa, WindowDescriptor};
+use bevy::prelude::*;
 use bevy::DefaultPlugins;
 use last_kingdom::GamePlugin;
 
@@ -19,6 +19,12 @@ fn main() {
             ..Default::default()
         })
         .add_plugins(DefaultPlugins)
+        .add_startup_system(setup)
         .add_plugin(GamePlugin);
     app.run();
+}
+
+fn setup(mut commands: Commands) {
+    commands.spawn_bundle(UiCameraBundle::default());
+    commands.spawn_bundle(OrthographicCameraBundle::new_2d());
 }

@@ -46,9 +46,9 @@ pub struct TextureAssets {
 pub struct PlayerSheet {
     #[asset(texture_atlas(tile_size_x = 32., tile_size_y = 50., columns = 1, rows = 1))]
     #[asset(path = "sprite/player_sheet.png")]
-    pub player_idle: Handle<TextureAtlas>,
+    pub idle: Handle<TextureAtlas>,
 
     #[asset(texture_atlas(tile_size_x = 32., tile_size_y = 50., columns = 8, rows = 1))]
     #[asset(path = "sprite/player_sheet.png")]
-    pub player_walk: Handle<TextureAtlas>,
+    pub walk: Handle<TextureAtlas>,
 }

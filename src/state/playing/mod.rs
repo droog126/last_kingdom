@@ -1,4 +1,6 @@
+use crate::state::loading::PlayerSheet;
 use crate::state::GameState;
+use crate::systems::input::InsInput;
 use bevy::prelude::*;
 pub struct PlayingPlugin;
 impl Plugin for PlayingPlugin {
@@ -9,8 +11,20 @@ impl Plugin for PlayingPlugin {
     }
 }
 
-fn playing_enter() {
-    println!("进入了游戏")
+fn playing_enter(mut commands: Commands, playerSheet: Res<PlayerSheet>) {
+    commands
+        .spawn_bundle(SpriteSheetBundle {
+            transform: Transform {
+                translation: Vec3::new(0.0, 0.0, 0.0),
+                ..Default::default()
+            },
+            texture_atlas: playerSheet.idle.clone(),
+            ..Default::default()
+        })
+        .insert(InsInput {
+            ..Default::default()
+        });
+    println!("进入了游戏");
 }
 
 fn playing_setup() {

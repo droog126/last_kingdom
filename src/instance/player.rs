@@ -1,6 +1,8 @@
 use crate::actions::Actions;
 use crate::loading::TextureAssets;
+use crate::systems::input::InsInput;
 use crate::GameState;
+
 use bevy::prelude::*;
 
 pub struct PlayerPlugin;
@@ -21,9 +23,7 @@ impl Plugin for PlayerPlugin {
     }
 }
 
-fn spawn_camera(mut commands: Commands) {
-    commands.spawn_bundle(OrthographicCameraBundle::new_2d());
-}
+fn spawn_camera(mut commands: Commands) {}
 
 fn spawn_player(mut commands: Commands, textures: Res<TextureAssets>) {
     commands
@@ -32,6 +32,7 @@ fn spawn_player(mut commands: Commands, textures: Res<TextureAssets>) {
             transform: Transform::from_translation(Vec3::new(0., 0., 1.)),
             ..Default::default()
         })
+        .insert(InsInput)
         .insert(Player);
 }
 

@@ -10,7 +10,6 @@ impl Plugin for MenuPlugin {
 }
 
 fn menu_enter(mut commands: Commands) {
-    commands.spawn_bundle(UiCameraBundle::default());
     println!("进入了菜单")
 }
 
