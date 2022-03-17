@@ -1,56 +1,76 @@
-use crate::actions::Actions;
-use crate::loading::TextureAssets;
+use crate::state::loading::PlayerSheet;
 use crate::systems::input::InsInput;
-use crate::GameState;
+use crate::systems::stateMachine::{Info, InsState, StateChangeEvt, StateInfo, StateMachine};
 
 use bevy::prelude::*;
 
-pub struct PlayerPlugin;
-
 #[derive(Component)]
-pub struct Player;
+pub struct PlayerTag;
 
-/// This plugin handles player related stuff like movement
-/// Player logic is only active during the State `GameState::Playing`
-impl Plugin for PlayerPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_system_set(
-            SystemSet::on_enter(GameState::Playing)
-                .with_system(spawn_player)
-                .with_system(spawn_camera),
-        )
-        .add_system_set(SystemSet::on_update(GameState::Playing).with_system(move_player));
+#[derive(Component, Debug)]
+// #[reflect(Component)]
+pub struct PlayerProps {
+    pub spd: f32,
+}
+impl Info for InsState {
+    fn _get(&self) -> StateInfo {
+        match (self.0) {
+            StateMachine::Idle => StateInfo { maxIndex: 2 },
+            StateMachine::Walk => StateInfo { maxIndex: 8 },
+            _ => StateInfo { maxIndex: 1 },
+        }
     }
 }
 
-fn spawn_camera(mut commands: Commands) {}
-
-fn spawn_player(mut commands: Commands, textures: Res<TextureAssets>) {
+pub fn player_create(mut commands: Commands, playerSheet: Res<PlayerSheet>) {
     commands
-        .spawn_bundle(SpriteBundle {
-            texture: textures.texture_bevy.clone(),
-            transform: Transform::from_translation(Vec3::new(0., 0., 1.)),
+        .spawn_bundle(SpriteSheetBundle {
+            transform: Transform {
+                translation: Vec3::new(0.0, 0.0, 0.0),
+                ..Default::default()
+            },
+            texture_atlas: playerSheet.idle.clone(),
             ..Default::default()
         })
-        .insert(InsInput)
-        .insert(Player);
+        .insert(PlayerProps { spd: 4.0 })
+        .insert(InsInput {
+            ..Default::default()
+        })
+        .insert(InsState {
+            ..Default::default()
+        })
+        .insert(PlayerTag);
 }
 
-fn move_player(
-    time: Res<Time>,
-    actions: Res<Actions>,
-    mut player_query: Query<&mut Transform, With<Player>>,
+pub fn player_step(
+    mut player_query: Query<
+        (
+            Entity,
+            &mut Transform,
+            &PlayerProps,
+            &mut InsInput,
+            &mut InsState,
+        ),
+        With<PlayerTag>,
+    >,
+    mut changeStateSend: EventWriter<StateChangeEvt>,
 ) {
-    if actions.player_movement.is_none() {
-        return;
-    }
-    let speed = 150.;
-    let movement = Vec3::new(
-        actions.player_movement.unwrap().x * speed * time.delta_seconds(),
-        actions.player_movement.unwrap().y * speed * time.delta_seconds(),
-        0.,
-    );
-    for mut player_transform in player_query.iter_mut() {
-        player_transform.translation += movement;
+    for (entity, mut trans, props, mut input, mut insState) in player_query.iter_mut() {
+        if (input.dir.length() == 0.0) {
+            changeStateSend.send(StateChangeEvt {
+                ins: entity,
+                newState: StateMachine::Idle,
+            });
+        } else {
+            changeStateSend.send(StateChangeEvt {
+                ins: entity,
+                newState: StateMachine::Walk,
+            });
+            let factor = props.spd;
+            trans.translation.x += input.dir.x * factor;
+            trans.translation.y += input.dir.y * factor;
+        }
     }
 }
+
+pub fn player_draw() {}

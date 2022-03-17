@@ -2,6 +2,7 @@
 
 mod actions;
 mod audio;
+
 mod instance;
 mod state;
 mod systems;
@@ -24,7 +25,8 @@ impl Plugin for GamePlugin {
             .add_plugin(MenuPlugin)
             .add_plugin(PlayingPlugin)
             // system
-            .add_plugin(systems::input::InputPlugin);
+            .add_plugin(systems::input::InputPlugin)
+            .add_plugin(systems::stateMachine::StateMachinePlugin);
 
         #[cfg(debug_assertions)]
         {
