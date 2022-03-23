@@ -9,7 +9,9 @@ impl Plugin for PlayingPlugin {
         app.add_system_set(
             SystemSet::on_enter(GameState::Playing)
                 .with_system(playing_enter)
-                .with_system(player_create),
+                .with_system(player_create.config(|params| {
+                    params.0 = Some(true);
+                })),
         )
         .add_system_set(SystemSet::on_update(GameState::Playing).with_system(playing_setup))
         .add_system_set(
@@ -18,6 +20,10 @@ impl Plugin for PlayingPlugin {
                 .with_system(player_step),
         )
         .add_system_set(SystemSet::on_exit(GameState::Playing).with_system(playing_exit));
+    }
+
+    fn name(&self) -> &str {
+        std::any::type_name::<Self>()
     }
 }
 

@@ -1,9 +1,19 @@
+use std::collections::HashMap;
+
 use crate::state::GameState;
 use bevy::prelude::*;
 use bevy_asset_loader::{AssetCollection, AssetLoader};
 use bevy_kira_audio::AudioSource;
 
 pub struct LoadingPlugin;
+
+pub struct SpriteCenter(pub HashMap<String, Handle<TextureAtlas>>);
+impl FromWorld for SpriteCenter {
+    fn from_world(world: &mut World) -> Self {
+        let mut spriteCenter: HashMap<String, Handle<TextureAtlas>> = HashMap::new();
+        SpriteCenter(spriteCenter)
+    }
+}
 
 /// This plugin loads all assets using [AssetLoader] from a third party bevy plugin
 /// Alternatively you can write the logic to load assets yourself
@@ -14,9 +24,10 @@ impl Plugin for LoadingPlugin {
             .with_collection::<FontAssets>()
             .with_collection::<AudioAssets>()
             .with_collection::<TextureAssets>()
-            .with_collection::<PlayerSheet>()
+            .with_collection::<SpriteSheetCollection>()
             .continue_to_state(GameState::Menu)
             .build(app);
+        app.init_resource::<SpriteCenter>();
     }
 }
 
@@ -42,13 +53,13 @@ pub struct TextureAssets {
     pub texture_bevy: Handle<Image>,
 }
 
-#[derive(AssetCollection)]
-pub struct PlayerSheet {
+#[derive(AssetCollection, Clone, Debug)]
+pub struct SpriteSheetCollection {
     #[asset(texture_atlas(tile_size_x = 32., tile_size_y = 50., columns = 1, rows = 1))]
     #[asset(path = "sprite/player_sheet.png")]
-    pub idle: Handle<TextureAtlas>,
+    pub player_idle: Handle<TextureAtlas>,
 
-    #[asset(texture_atlas(tile_size_x = 32., tile_size_y = 50., columns = 8, rows = 1))]
+    #[asset(texture_atlas(tile_size_x = 32., tile_size_y = 50., columns = 8, rows = 2))]
     #[asset(path = "sprite/player_sheet.png")]
-    pub walk: Handle<TextureAtlas>,
+    pub player_walk: Handle<TextureAtlas>,
 }

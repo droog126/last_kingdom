@@ -8,7 +8,6 @@ impl Plugin for EGuiPlugin {
         app
             //.register_inspectable::<InsInput>()
             .register_type::<InsInput>()
-            .register_type::<InsState>()
             .add_plugin(WorldInspectorPlugin::new());
     }
 }

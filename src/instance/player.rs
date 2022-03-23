@@ -1,4 +1,4 @@
-use crate::state::loading::PlayerSheet;
+use crate::state::loading::{SpriteCenter, SpriteSheetCollection};
 use crate::systems::input::InsInput;
 use crate::systems::stateMachine::{Info, InsState, StateChangeEvt, StateInfo, StateMachine};
 
@@ -12,33 +12,55 @@ pub struct PlayerTag;
 pub struct PlayerProps {
     pub spd: f32,
 }
+
 impl Info for InsState {
     fn _get(&self) -> StateInfo {
         match (self.0) {
-            StateMachine::Idle => StateInfo { maxIndex: 2 },
-            StateMachine::Walk => StateInfo { maxIndex: 8 },
-            _ => StateInfo { maxIndex: 1 },
+            // StateMachine::Idle => StateInfo {
+            //     maxIndex: 1,
+            //     spriteFile: spriteSheetCollection.p,
+            // },
+            // StateMachine::Walk => StateInfo {
+            //     maxIndex: 8,
+            //     spriteFile: "player_walk".to_string(),
+            // },
+            _ => StateInfo {
+                maxIndex: 1,
+                // spriteFile: self.1.player_idle.clone(),
+            },
         }
     }
 }
 
-pub fn player_create(mut commands: Commands, playerSheet: Res<PlayerSheet>) {
+pub fn player_create(
+    mut local: Local<bool>,
+    mut commands: Commands,
+    mut spriteSheetCollection: ResMut<SpriteSheetCollection>,
+    mut spriteCenter: ResMut<SpriteCenter>,
+) {
+    println!("我是否是第一次调用{:?}", local);
+
+    if (*local == true) {
+        spriteCenter.0.insert(
+            "playerIdle".to_string(),
+            spriteSheetCollection.player_idle.clone(),
+        );
+        *local = false;
+    }
     commands
         .spawn_bundle(SpriteSheetBundle {
             transform: Transform {
                 translation: Vec3::new(0.0, 0.0, 0.0),
                 ..Default::default()
             },
-            texture_atlas: playerSheet.idle.clone(),
+            texture_atlas: spriteSheetCollection.player_idle.clone(),
             ..Default::default()
         })
         .insert(PlayerProps { spd: 4.0 })
         .insert(InsInput {
             ..Default::default()
         })
-        .insert(InsState {
-            ..Default::default()
-        })
+        .insert(InsState(StateMachine::Idle))
         .insert(PlayerTag);
 }
 

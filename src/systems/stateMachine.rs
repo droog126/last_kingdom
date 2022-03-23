@@ -1,4 +1,7 @@
+use bevy::core::FixedTimestep;
 use bevy::prelude::*;
+
+use crate::state::loading::SpriteSheetCollection;
 
 #[derive(Component, Copy, Clone, Eq, PartialEq, Debug, Hash, Reflect)]
 #[reflect(Component)]
@@ -12,13 +15,16 @@ impl Default for StateMachine {
     }
 }
 
+// 和struct相关的函数闭包需求就挂在这个struct的trait上
+
 #[derive(Debug)]
 pub struct StateInfo {
-    pub maxIndex: i16,
+    pub maxIndex: usize,
+    // pub spriteFile: Handle<TextureAtlas>,
 }
 
-#[derive(Component, Debug, Default, Reflect, Copy, Clone)]
-#[reflect(Component)]
+#[derive(Component, Debug, Clone)]
+
 pub struct InsState(pub StateMachine);
 
 pub trait Info {
@@ -29,33 +35,48 @@ pub struct StateChangeEvt {
     pub ins: Entity,
     pub newState: StateMachine,
 }
+
 pub struct StateMachinePlugin;
 impl Plugin for StateMachinePlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(state_trigger).add_event::<StateChangeEvt>();
+        app.add_event::<StateChangeEvt>()
+            .add_system(state_trigger.label("stateUpdate"))
+            .add_system_set(
+                SystemSet::new()
+                    .with_run_criteria(FixedTimestep::step(0.015))
+                    .with_system(sprite_update),
+            );
     }
 }
 fn state_trigger(
     mut stateChangeRead: EventReader<StateChangeEvt>,
-    mut query: Query<&mut InsState>,
+    mut query: Query<(&mut InsState, &mut TextureAtlasSprite)>,
+    // spriteSheetCollection: Res<SpriteSheetCollection>,
 ) {
     for ev in stateChangeRead.iter() {
-        if let Ok(mut insState) = query.get_mut(ev.ins) {
-            // println!(
-            //     "发现该实体，并取得他的state :{:?} {:?}",
-            //     state.0, ev.newState
-            // );
+        if let Ok((mut insState, mut sprite)) = query.get_mut(ev.ins) {
             if (insState.0 != ev.newState) {
-                // println!("你做到了");
                 insState.0 = ev.newState;
+                sprite.index = 0;
             }
 
-            println!(
-                "curState:{:?} , curStateInfo:{:?}",
-                insState.0,
-                insState._get()
-            );
+            let spriteName = insState._get();
+
+            // println!("curState:{:?} , curStateInfo:{:?}", insState.0, spriteName);
         }
-        // println!("ins :{:?} newState:{:?}", ev.ins, ev.newState)
+    }
+}
+
+fn sprite_update(
+    texture_atlases: Res<Assets<TextureAtlas>>,
+    mut query: Query<(
+        &mut InsState,
+        &mut TextureAtlasSprite,
+        &Handle<TextureAtlas>,
+    )>,
+) {
+    for (mut insState, mut sprite, spriteTexture) in query.iter_mut() {
+        let texture_atlas = texture_atlases.get(spriteTexture).unwrap();
+        sprite.index = (sprite.index + 1) % texture_atlas.textures.len();
     }
 }
