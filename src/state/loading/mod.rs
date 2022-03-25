@@ -22,9 +22,9 @@ impl Plugin for LoadingPlugin {
     fn build(&self, app: &mut App) {
         AssetLoader::new(GameState::Loading)
             .with_collection::<FontAssets>()
-            .with_collection::<AudioAssets>()
-            .with_collection::<TextureAssets>()
-            .with_collection::<SpriteSheetCollection>()
+            // .with_collection::<AudioAssets>()
+            // .with_collection::<TextureAssets>()
+            // .with_collection::<SpriteSheetCollection>()
             .continue_to_state(GameState::Menu)
             .build(app);
         app.init_resource::<SpriteCenter>();

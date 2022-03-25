@@ -16,17 +16,20 @@ pub struct PlayerProps {
 impl Info for InsState {
     fn _get(&self) -> StateInfo {
         match (self.0) {
-            // StateMachine::Idle => StateInfo {
-            //     maxIndex: 1,
-            //     spriteFile: spriteSheetCollection.p,
-            // },
-            // StateMachine::Walk => StateInfo {
-            //     maxIndex: 8,
-            //     spriteFile: "player_walk".to_string(),
-            // },
+            StateMachine::Idle => StateInfo {
+                startIndex: 0,
+                endIndex: 0,
+                spriteName: "player".to_string(),
+            },
+            StateMachine::Walk => StateInfo {
+                startIndex: 8,
+                endIndex: 15,
+                spriteName: "player".to_string(),
+            },
             _ => StateInfo {
-                maxIndex: 1,
-                // spriteFile: self.1.player_idle.clone(),
+                startIndex: 0,
+                endIndex: 0,
+                spriteName: "player".to_string(),
             },
         }
     }
@@ -35,28 +38,38 @@ impl Info for InsState {
 pub fn player_create(
     mut local: Local<bool>,
     mut commands: Commands,
-    mut spriteSheetCollection: ResMut<SpriteSheetCollection>,
     mut spriteCenter: ResMut<SpriteCenter>,
+    asset_server: Res<AssetServer>,
+    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
 ) {
     println!("我是否是第一次调用{:?}", local);
 
     if (*local == true) {
-        spriteCenter.0.insert(
-            "playerIdle".to_string(),
-            spriteSheetCollection.player_idle.clone(),
+        let texture_handle = asset_server.load("sprite/player_sheet.png");
+        let sprite_atlas = TextureAtlas::from_grid_with_padding(
+            texture_handle.clone(),
+            Vec2::new(32.0, 50.0),
+            8,
+            2,
+            Vec2::new(0.0, 0.0),
         );
+
+        let sprite_handle = texture_atlases.add(sprite_atlas);
+        spriteCenter.0.insert("player".to_string(), sprite_handle);
+
         *local = false;
     }
+
     commands
         .spawn_bundle(SpriteSheetBundle {
             transform: Transform {
                 translation: Vec3::new(0.0, 0.0, 0.0),
                 ..Default::default()
             },
-            texture_atlas: spriteSheetCollection.player_idle.clone(),
+            texture_atlas: spriteCenter.0.get("player").unwrap().clone(),
             ..Default::default()
         })
-        .insert(PlayerProps { spd: 4.0 })
+        .insert(PlayerProps { spd: 300.0 })
         .insert(InsInput {
             ..Default::default()
         })
@@ -65,6 +78,7 @@ pub fn player_create(
 }
 
 pub fn player_step(
+    time: Res<Time>,
     mut player_query: Query<
         (
             Entity,
@@ -82,15 +96,17 @@ pub fn player_step(
             changeStateSend.send(StateChangeEvt {
                 ins: entity,
                 newState: StateMachine::Idle,
+                xDir: input.dir.x,
             });
         } else {
             changeStateSend.send(StateChangeEvt {
                 ins: entity,
                 newState: StateMachine::Walk,
+                xDir: input.dir.x,
             });
-            let factor = props.spd;
-            trans.translation.x += input.dir.x * factor;
-            trans.translation.y += input.dir.y * factor;
+            trans.translation.x += input.dir.x * props.spd * time.delta_seconds();
+            trans.translation.y += input.dir.y * props.spd * time.delta_seconds();
+            println!("s:{:?}  {:?}", time.delta_seconds(), time.delta());
         }
     }
 }

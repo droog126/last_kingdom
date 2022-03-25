@@ -26,5 +26,10 @@ fn main() {
 
 fn setup(mut commands: Commands) {
     commands.spawn_bundle(UiCameraBundle::default());
-    commands.spawn_bundle(OrthographicCameraBundle::new_2d());
+
+    let mut camera = OrthographicCameraBundle::new_2d();
+    camera.transform.scale.x = 0.5;
+    camera.transform.scale.y = 0.5;
+
+    commands.spawn_bundle(camera);
 }

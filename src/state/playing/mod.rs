@@ -16,7 +16,7 @@ impl Plugin for PlayingPlugin {
         .add_system_set(SystemSet::on_update(GameState::Playing).with_system(playing_setup))
         .add_system_set(
             SystemSet::on_update(GameState::Playing)
-                .with_run_criteria(FixedTimestep::step(0.015))
+                // .with_run_criteria(FixedTimestep::step(0.015))
                 .with_system(player_step),
         )
         .add_system_set(SystemSet::on_exit(GameState::Playing).with_system(playing_exit));
