@@ -1,4 +1,5 @@
 use crate::state::loading::{SpriteCenter, SpriteSheetCollection};
+use crate::systems::debug::DebugControl;
 use crate::systems::input::InsInput;
 use crate::systems::stateMachine::{Info, InsState, StateChangeEvt, StateInfo, StateMachine};
 
@@ -90,7 +91,11 @@ pub fn player_step(
         With<PlayerTag>,
     >,
     mut changeStateSend: EventWriter<StateChangeEvt>,
+    debugStatus: Res<DebugControl>,
 ) {
+    if (debugStatus.camera_debug) {
+        return;
+    }
     for (entity, mut trans, props, mut input, mut insState) in player_query.iter_mut() {
         if (input.dir.length() == 0.0) {
             changeStateSend.send(StateChangeEvt {
@@ -106,9 +111,6 @@ pub fn player_step(
             });
             trans.translation.x += input.dir.x * props.spd * time.delta_seconds();
             trans.translation.y += input.dir.y * props.spd * time.delta_seconds();
-            println!("s:{:?}  {:?}", time.delta_seconds(), time.delta());
         }
     }
 }
-
-pub fn player_draw() {}

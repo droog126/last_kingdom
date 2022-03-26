@@ -19,17 +19,11 @@ fn main() {
             ..Default::default()
         })
         .add_plugins(DefaultPlugins)
-        .add_startup_system(setup)
-        .add_plugin(GamePlugin);
+        .add_plugin(GamePlugin)
+        .add_startup_system(setup);
     app.run();
 }
 
 fn setup(mut commands: Commands) {
     commands.spawn_bundle(UiCameraBundle::default());
-
-    let mut camera = OrthographicCameraBundle::new_2d();
-    camera.transform.scale.x = 0.5;
-    camera.transform.scale.y = 0.5;
-
-    commands.spawn_bundle(camera);
 }

@@ -1,7 +1,12 @@
 
-# nextP0
-1. 渲染一个可以正确移动并对应动作的精灵
+# 进度
+1. 输入系统
+2. 动画系统
+3. 移动
+4. 相机跟随  相机debug
+5. 地图编辑
 
 
+# 启动
+cargo run
 
-$env:RUST_BACKTRACE=full;cargo run

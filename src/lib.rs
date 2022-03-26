@@ -23,7 +23,8 @@ impl Plugin for GamePlugin {
             .add_plugin(PlayingPlugin)
             // system
             .add_plugin(systems::input::InputPlugin)
-            .add_plugin(systems::stateMachine::StateMachinePlugin);
+            .add_plugin(systems::stateMachine::StateMachinePlugin)
+            .add_plugin(systems::camera::CameraPlugin);
 
         #[cfg(debug_assertions)]
         {
