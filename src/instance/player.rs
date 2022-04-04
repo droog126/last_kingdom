@@ -1,4 +1,4 @@
-use crate::state::loading::{SpriteCenter, SpriteSheetCollection};
+use crate::state::loading::SpriteCenter;
 use crate::systems::debug::DebugControl;
 use crate::systems::input::InsInput;
 use crate::systems::stateMachine::{Info, InsState, StateChangeEvt, StateInfo, StateMachine};
@@ -60,22 +60,24 @@ pub fn player_create(
 
         *local = false;
     }
-
-    commands
-        .spawn_bundle(SpriteSheetBundle {
-            transform: Transform {
-                translation: Vec3::new(0.0, 0.0, 0.0),
+    for i in 0..2 {
+        commands
+            .spawn_bundle(SpriteSheetBundle {
+                transform: Transform {
+                    translation: Vec3::new(0.0, 0.0, 10.0),
+                    ..Default::default()
+                },
+                texture_atlas: spriteCenter.0.get("player").unwrap().clone(),
                 ..Default::default()
-            },
-            texture_atlas: spriteCenter.0.get("player").unwrap().clone(),
-            ..Default::default()
-        })
-        .insert(PlayerProps { spd: 300.0 })
-        .insert(InsInput {
-            ..Default::default()
-        })
-        .insert(InsState(StateMachine::Idle))
-        .insert(PlayerTag);
+            })
+            .insert(PlayerProps { spd: 300.0 })
+            .insert(InsInput {
+                ..Default::default()
+            })
+            .insert(Name::new("player".to_string()))
+            .insert(InsState(StateMachine::Idle))
+            .insert(PlayerTag);
+    }
 }
 
 pub fn player_step(

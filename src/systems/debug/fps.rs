@@ -19,7 +19,6 @@ impl Plugin for FpsPlugin {
                 .with_run_criteria(FixedTimestep::step(0.5))
                 .with_system(fps_setup_system),
         );
-        app.add_system(fps_setup_system);
     }
 }
 fn fps_start_system(mut commands: Commands, asset_server: Res<AssetServer>) {
@@ -29,7 +28,7 @@ fn fps_start_system(mut commands: Commands, asset_server: Res<AssetServer>) {
             style: Style {
                 position_type: PositionType::Absolute,
                 position: Rect {
-                    top: Val::Px(40.0),
+                    bottom: Val::Px(40.0),
                     left: Val::Px(5.0),
                     ..Default::default()
                 },
@@ -37,7 +36,7 @@ fn fps_start_system(mut commands: Commands, asset_server: Res<AssetServer>) {
             },
             text: Text {
                 sections: vec![TextSection {
-                    value: "fps".to_string(),
+                    value: "appState".to_string(),
                     style: TextStyle {
                         font: asset_server.load("fonts/FiraSans-Bold.ttf"),
                         font_size: 16.0,
@@ -54,7 +53,7 @@ fn fps_start_system(mut commands: Commands, asset_server: Res<AssetServer>) {
             style: Style {
                 position_type: PositionType::Absolute,
                 position: Rect {
-                    top: Val::Px(5.0),
+                    bottom: Val::Px(5.0),
                     left: Val::Px(5.0),
                     ..Default::default()
                 },

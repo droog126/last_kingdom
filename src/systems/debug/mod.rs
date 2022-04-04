@@ -20,9 +20,15 @@ impl FromWorld for DebugControl {
 
 impl Plugin for DebugPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<DebugControl>();
-        app.add_system_set(SystemSet::new().with_system(debug_switch));
+        // 热更新
+        app.add_startup_system(setup)
+            .init_resource::<DebugControl>()
+            .add_system_set(SystemSet::new().with_system(debug_switch));
     }
+}
+fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
+    // #[cfg(debug_assertions)]
+    // asset_server.watch_for_changes().unwrap();
 }
 
 fn debug_switch(

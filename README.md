@@ -4,9 +4,18 @@
 2. 动画系统
 3. 移动
 4. 相机跟随  相机debug
-5. 地图编辑
+# todo
+5. 地图编辑(等待1.0支持)
+
+6. 碰撞
+7. 怪物
+8. pvp
+8. 联网
+
+
+
 
 
 # 启动
 cargo run
-
+cargo run --features bevy/trace_chrome

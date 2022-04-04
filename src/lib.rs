@@ -1,4 +1,8 @@
 #![allow(non_snake_case)]
+#![allow(unused_must_use)]
+#![allow(dead_code)]
+#![allow(unused_mut)]
+#![allow(unused_variables)]
 
 mod instance;
 mod state;
@@ -24,7 +28,9 @@ impl Plugin for GamePlugin {
             // system
             .add_plugin(systems::input::InputPlugin)
             .add_plugin(systems::stateMachine::StateMachinePlugin)
-            .add_plugin(systems::camera::CameraPlugin);
+            .add_plugin(systems::camera::CameraPlugin)
+            .add_plugin(systems::title::TitlePlugin);
+        // .add_plugin(systems::render::RenderPlugin);
 
         #[cfg(debug_assertions)]
         {
