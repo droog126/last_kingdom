@@ -26,6 +26,16 @@ fn camera_create(mut commands: Commands) {
     camera.transform.scale.x = 0.5;
     camera.transform.scale.y = 0.5;
     commands.spawn_bundle(camera).insert(MainCameraTag);
+
+    commands
+        .spawn_bundle(PerspectiveCameraBundle::new_3d())
+        .insert(
+            Transform {
+                translation: Vec3::new(3.0, 7., -19.0),
+                ..Default::default()
+            }
+            .looking_at(Vec3::new(1., 4., 0.), Vec3::Y),
+        );
 }
 
 fn camera_step(

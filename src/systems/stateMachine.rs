@@ -1,7 +1,7 @@
 use bevy::core::FixedTimestep;
 use bevy::prelude::*;
 
-use crate::state::loading::{SpriteCenter, SpriteSheetCollection};
+use crate::state::loading::{SpriteCenter};
 
 #[derive(Component, Copy, Clone, Eq, PartialEq, Debug, Hash, Reflect)]
 #[reflect(Component)]

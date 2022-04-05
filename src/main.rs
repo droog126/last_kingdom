@@ -5,14 +5,18 @@
 use bevy::prelude::*;
 use bevy::DefaultPlugins;
 use last_kingdom::GamePlugin;
+use last_kingdom::config::Config;
 
 fn main() {
+    let config = Config::new("config.ini");
+
+
     let mut app = App::new();
     app.insert_resource(Msaa { samples: 1 })
         .insert_resource(ClearColor(Color::rgb(0.4, 0.4, 0.4)))
         .insert_resource(WindowDescriptor {
-            width: 800.,
-            height: 600.,
+            width: config.width(),
+            height: config.height(),
             title: "LastKingdom".to_string(), // ToDo
             vsync: false,
             resizable: true,

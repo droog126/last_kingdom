@@ -8,11 +8,16 @@ mod instance;
 mod state;
 mod systems;
 mod utils;
+pub mod config;
 
 use state::loading::LoadingPlugin;
 use state::menu::MenuPlugin;
 use state::playing::PlayingPlugin;
 use state::GameState;
+
+
+
+
 
 #[cfg(debug_assertions)]
 use bevy::prelude::*;
@@ -26,10 +31,12 @@ impl Plugin for GamePlugin {
             .add_plugin(MenuPlugin)
             .add_plugin(PlayingPlugin)
             // system
+            .add_plugin(systems::physics::PhysicsPlugin)
             .add_plugin(systems::input::InputPlugin)
             .add_plugin(systems::stateMachine::StateMachinePlugin)
             .add_plugin(systems::camera::CameraPlugin)
             .add_plugin(systems::title::TitlePlugin);
+
         // .add_plugin(systems::render::RenderPlugin);
 
         #[cfg(debug_assertions)]
@@ -38,7 +45,6 @@ impl Plugin for GamePlugin {
                 .add_plugin(systems::debug::egui::EGuiPlugin)
                 .add_plugin(systems::debug::fps::FpsPlugin)
                 .add_plugin(systems::debug::DebugPlugin);
-            // .add_plugin(LogDiagnosticsPlugin::default());
         }
     }
 }
