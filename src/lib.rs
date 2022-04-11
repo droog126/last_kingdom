@@ -4,20 +4,16 @@
 #![allow(unused_mut)]
 #![allow(unused_variables)]
 
+pub mod config;
 mod instance;
 mod state;
 mod systems;
 mod utils;
-pub mod config;
 
 use state::loading::LoadingPlugin;
 use state::menu::MenuPlugin;
 use state::playing::PlayingPlugin;
 use state::GameState;
-
-
-
-
 
 #[cfg(debug_assertions)]
 use bevy::prelude::*;
@@ -35,7 +31,8 @@ impl Plugin for GamePlugin {
             .add_plugin(systems::input::InputPlugin)
             .add_plugin(systems::stateMachine::StateMachinePlugin)
             .add_plugin(systems::camera::CameraPlugin)
-            .add_plugin(systems::title::TitlePlugin);
+            // .add_plugin(systems::title::TitlePlugin)
+            .add_plugin(systems::collision::CollisionPlugin);
 
         // .add_plugin(systems::render::RenderPlugin);
 

@@ -4,5 +4,6 @@ pub mod input;
 pub mod stateMachine;
 pub mod title;
 pub mod physics;
+pub mod collision;
 
 // pub mod render;
