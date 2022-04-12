@@ -41,6 +41,7 @@ impl Plugin for GamePlugin {
             app.add_plugin(FrameTimeDiagnosticsPlugin::default())
                 .add_plugin(systems::debug::egui::EGuiPlugin)
                 .add_plugin(systems::debug::fps::FpsPlugin)
+                .add_plugin(systems::debug::collision::CollisionDebugPlugin)
                 .add_plugin(systems::debug::DebugPlugin);
         }
     }

@@ -1,10 +1,16 @@
 use crate::state::loading::SpriteCenter;
-use crate::systems::debug::DebugControl;
+use crate::systems::collision::{CollisionID, CollisionTag};
+use crate::systems::debug::DebugStatus;
 use crate::systems::input::InsInput;
 use crate::systems::stateMachine::{Info, InsState, StateChangeEvt, StateInfo, StateMachine};
+use bevy_prototype_lyon::prelude::*;
 
 use bevy::prelude::*;
 
+// res
+pub struct GLobalPlayerID(pub Entity);
+
+//component
 #[derive(Component)]
 pub struct PlayerTag;
 
@@ -60,8 +66,27 @@ pub fn player_create(
 
         *local = false;
     }
-    for i in 0..2 {
-        commands
+
+    for _ in 0..1 {
+        let shape = shapes::Rectangle {
+            extents: Vec2::new(20.0, 10.0),
+            origin: RectangleOrigin::Center,
+        };
+        let collisionChildId = commands
+            .spawn_bundle(GeometryBuilder::build_as(
+                &shape,
+                DrawMode::Outlined {
+                    fill_mode: FillMode::color(Color::CYAN),
+                    outline_mode: StrokeMode::new(Color::BLACK, 1.0),
+                },
+                Transform::from_translation(Vec3::new(0., -20.0, 0.0)),
+            ))
+            .insert(CollisionTag)
+            .insert(Name::new("collision"))
+            .insert(Visibility { is_visible: false })
+            .id();
+
+        let parentId = commands
             .spawn_bundle(SpriteSheetBundle {
                 transform: Transform {
                     translation: Vec3::new(0.0, 0.0, 10.0),
@@ -74,9 +99,14 @@ pub fn player_create(
             .insert(InsInput {
                 ..Default::default()
             })
-            .insert(Name::new("player".to_string()))
             .insert(InsState(StateMachine::Idle))
-            .insert(PlayerTag);
+            .insert(Name::new("player".to_string()))
+            .insert(PlayerTag)
+            .insert(CollisionID(collisionChildId))
+            .push_children(&[collisionChildId])
+            .id();
+
+        commands.insert_resource(GLobalPlayerID(parentId));
     }
 }
 
@@ -93,7 +123,7 @@ pub fn player_step(
         With<PlayerTag>,
     >,
     mut changeStateSend: EventWriter<StateChangeEvt>,
-    debugStatus: Res<DebugControl>,
+    debugStatus: Res<DebugStatus>,
 ) {
     if (debugStatus.camera_debug) {
         return;

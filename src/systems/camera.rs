@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use crate::instance::player::PlayerTag;
 
-use super::{debug::DebugControl, input::InsInput};
+use super::{debug::DebugStatus, input::InsInput};
 
 #[derive(Component)]
 pub struct MainCameraTag;
@@ -32,7 +32,7 @@ fn camera_step(
     wnds: Res<Windows>,
     time: Res<Time>,
     mut cursorPosition: ResMut<CursorPosition>,
-    debugStatus: Res<DebugControl>,
+    debugStatus: Res<DebugStatus>,
     mut query: QuerySet<(
         QueryState<(&Camera, &mut Transform), With<MainCameraTag>>,
         QueryState<(&InsInput, &GlobalTransform), With<PlayerTag>>,

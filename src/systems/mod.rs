@@ -1,9 +1,9 @@
 pub mod camera;
+pub mod collision;
 pub mod debug;
 pub mod input;
-pub mod stateMachine;
-pub mod title;
+pub mod line;
 pub mod physics;
-pub mod collision;
-
+pub mod stateMachine;
+// pub mod title;
 // pub mod render;

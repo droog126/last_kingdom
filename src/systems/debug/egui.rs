@@ -7,9 +7,10 @@ use bevy_editor_pls::*;
 pub struct EGuiPlugin;
 impl Plugin for EGuiPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugin(EditorPlugin);
-        // .register_inspectable::<InsInput>()
-        // .register_type::<InsInput>()
-        // .add_plugin(WorldInspectorPlugin::new());
+        app
+            // .add_plugin(EditorPlugin);
+            // .register_inspectable::<InsInput>()
+            .register_type::<InsInput>()
+            .add_plugin(WorldInspectorPlugin::new());
     }
 }
