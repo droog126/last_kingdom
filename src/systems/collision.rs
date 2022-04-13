@@ -1,6 +1,5 @@
 use bevy::{core::FixedTimestep, prelude::*};
-use bevy_prototype_lyon::prelude::*;
-use rand::prelude::*;
+use bevy_prototype_lyon::{prelude::*, render::Shape};
 
 use broccoli::{
     axgeom::Rect,
@@ -29,40 +28,40 @@ impl Plugin for CollisionPlugin {
             .add_startup_system(startup)
             // .add_system(step)
             .add_system_set(
-                SystemSet::new()
-                    .with_system(step)
-                    .with_run_criteria(FixedTimestep::step(1.)),
+                SystemSet::new().with_system(step), // .with_run_criteria(FixedTimestep::step(1.)),
             );
-
-        // app.add_startup_system(camera_create)
-        //     // .insert_resource(CursorPosition { x: 0.0, y: 0.0 })
-        //     .add_system(camera_step);
     }
-}
-
-use broccoli::*;
-use rand::Rng;
-pub fn point_to_rect_f32(a: axgeom::Vec2<f32>, radius: f32) -> Rect<f32> {
-    Rect::from_point(a, axgeom::vec2same(radius))
-}
-
-pub fn distribute<X, T: Num>(
-    inner: &mut [X],
-    mut func: impl FnMut(&X) -> Rect<T>,
-) -> Vec<BBox<T, &mut X>> {
-    inner.iter_mut().map(|a| bbox(func(a), a)).collect()
-}
-
-pub fn make_rand() -> impl Iterator<Item = [f32; 2]> {
-    let mut rng = thread_rng();
-
-    std::iter::repeat_with(move || {
-        let randx = rng.gen::<f32>() * 1000.0;
-        let randy = rng.gen::<f32>() * 1000.0;
-        [randx, randy]
-    })
 }
 
 fn startup(mut commands: Commands) {}
 
-fn step() {}
+fn step(mut query: Query<(&GlobalTransform), With<CollisionTag>>) {
+    // println!("start");
+
+    // 1.转换shap->rect;
+    let mut aabbs: Vec<_> = Vec::new();
+
+    for (gloablTransform) in query.iter() {
+        let target = bbox(
+            rect(
+                gloablTransform.translation.x - 5.,
+                gloablTransform.translation.x + 5.,
+                gloablTransform.translation.y - 5.,
+                gloablTransform.translation.y + 5.,
+            ),
+            0,
+        );
+        aabbs.push(target);
+    }
+
+    println!("len: {:?}", aabbs.len());
+
+    let mut tree = broccoli::tree::new(&mut aabbs);
+
+    tree.colliding_pairs(|a, b| {
+        *a.unpack_inner() += 1;
+        *b.unpack_inner() += 1;
+        // println!("碰撞了")
+    });
+    // println!("aabbs: {:?}", aabbs);
+}

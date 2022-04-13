@@ -4,8 +4,6 @@ use bevy::prelude::*;
 use bevy_prototype_lyon::prelude::*;
 
 pub fn createCollision(commands: &mut Commands, x: f32, y: f32) -> Entity {
-    println!("无效吗？");
-
     let shape = shapes::Rectangle {
         extents: Vec2::new(10.0, 10.0),
         origin: RectangleOrigin::Center,

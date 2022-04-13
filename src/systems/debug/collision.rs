@@ -52,12 +52,11 @@ fn step(
     cursorPoint: Res<CursorPosition>,
     mut commands: Commands,
 ) {
-    if mouseInput.just_pressed(MouseButton::Left) {
-        println!("mouse pressed");
-
-        random_xy(1000, 1000).take(100)..map(|[x, y]| {
-            println!("{:?}", [x, y]);
-            createCollision(&mut commands, x, y);
-        });
+    if mouseInput.just_pressed(MouseButton::Middle) {
+        let mut ids = random_xy(1000, 1000)
+            .take(10000)
+            .map(|[x, y]| createCollision(&mut commands, x, y))
+            .collect::<Vec<_>>();
+        // println!("碰撞物 ids: {:?}", ids);
     }
 }
