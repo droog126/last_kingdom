@@ -19,7 +19,7 @@ pub fn createCollision(commands: &mut Commands, x: f32, y: f32) -> Entity {
         ))
         .insert(CollisionTag)
         .insert(Name::new("collision"))
-        .insert(Visibility { is_visible: false })
+        // .insert(Visibility { is_visible: false })
         .id();
 
     return (collisionChildId);

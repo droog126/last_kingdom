@@ -3,13 +3,13 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use bevy::prelude::*;
+use bevy::window::PresentMode;
 use bevy::DefaultPlugins;
-use last_kingdom::GamePlugin;
 use last_kingdom::config::Config;
+use last_kingdom::GamePlugin;
 
 fn main() {
     let config = Config::new("config.ini");
-
 
     let mut app = App::new();
     app.insert_resource(Msaa { samples: 1 })
@@ -18,7 +18,7 @@ fn main() {
             width: config.width(),
             height: config.height(),
             title: "LastKingdom".to_string(), // ToDo
-            vsync: false,
+            present_mode: PresentMode::Immediate,
             resizable: true,
             ..Default::default()
         })

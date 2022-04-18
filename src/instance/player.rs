@@ -51,7 +51,7 @@ pub fn player_create(
 ) {
     println!("我是否是第一次调用{:?}", local);
 
-    if (*local == true) {
+    if (*local == false) {
         let texture_handle = asset_server.load("sprite/player_sheet.png");
         let sprite_atlas = TextureAtlas::from_grid_with_padding(
             texture_handle.clone(),
@@ -64,7 +64,7 @@ pub fn player_create(
         let sprite_handle = texture_atlases.add(sprite_atlas);
         spriteCenter.0.insert("player".to_string(), sprite_handle);
 
-        *local = false;
+        *local = true;
     }
 
     for _ in 0..1 {

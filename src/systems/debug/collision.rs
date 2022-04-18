@@ -54,7 +54,7 @@ fn step(
 ) {
     if mouseInput.just_pressed(MouseButton::Middle) {
         let mut ids = random_xy(1000, 1000)
-            .take(10000)
+            .take(1)
             .map(|[x, y]| createCollision(&mut commands, x, y))
             .collect::<Vec<_>>();
         // println!("碰撞物 ids: {:?}", ids);

@@ -41,13 +41,13 @@ fn step(mut query: Query<(&GlobalTransform), With<CollisionTag>>) {
     // 1.转换shap->rect;
     let mut aabbs: Vec<_> = Vec::new();
 
-    for (gloablTransform) in query.iter() {
+    for (globalTransform) in query.iter() {
         let target = bbox(
             rect(
-                gloablTransform.translation.x - 5.,
-                gloablTransform.translation.x + 5.,
-                gloablTransform.translation.y - 5.,
-                gloablTransform.translation.y + 5.,
+                globalTransform.translation.x - 5.,
+                globalTransform.translation.x + 5.,
+                globalTransform.translation.y - 5.,
+                globalTransform.translation.y + 5.,
             ),
             0,
         );
@@ -59,9 +59,11 @@ fn step(mut query: Query<(&GlobalTransform), With<CollisionTag>>) {
     let mut tree = broccoli::tree::new(&mut aabbs);
 
     tree.colliding_pairs(|a, b| {
-        *a.unpack_inner() += 1;
-        *b.unpack_inner() += 1;
-        // println!("碰撞了")
+        let mut a_inner = a.unpack_inner();
+        let mut b_inner = b.unpack_inner();
+
+        println!("{:?} {:?}", a_inner, b_inner);
+        println!("碰撞了")
     });
     // println!("aabbs: {:?}", aabbs);
 }

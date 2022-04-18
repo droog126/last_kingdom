@@ -9,9 +9,7 @@ impl Plugin for PlayingPlugin {
         app.add_system_set(
             SystemSet::on_enter(GameState::Playing)
                 .with_system(playing_enter)
-                .with_system(player_create.config(|params| {
-                    params.0 = Some(true);
-                })),
+                .with_system(player_create),
         )
         .add_system_set(
             SystemSet::on_update(GameState::Playing)
