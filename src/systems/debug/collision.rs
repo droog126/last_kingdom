@@ -1,24 +1,20 @@
 use crate::{
-    instance::utils::createCollision,
-    systems::{camera::CursorPosition, collision::CollisionTag},
+    instance::utils::createDynCollision,
+    systems::{camera::CursorPosition, collision::CollisionDynTag},
     utils::random::random_xy,
 };
 use bevy::{ecs::schedule::ShouldRun, prelude::*};
-use bevy_prototype_lyon::prelude::*;
-use rand::prelude::*;
 
 use super::DebugStatus;
 pub struct CollisionDebugPlugin;
 impl Plugin for CollisionDebugPlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(startup)
-            // .add_system(step)
-            .add_system_set(
-                SystemSet::new()
-                    .with_system(trigger)
-                    .with_system(step)
-                    .with_run_criteria(need_run),
-            );
+        app.add_startup_system(startup).add_system_set(
+            SystemSet::new()
+                .with_system(trigger)
+                .with_system(step)
+                .with_run_criteria(need_run),
+        );
     }
 }
 
@@ -34,7 +30,7 @@ fn startup(mut commands: Commands) {}
 
 fn trigger(
     mut commands: Commands,
-    mut query: Query<&mut Visibility, With<CollisionTag>>,
+    mut query: Query<&mut Visibility, With<CollisionDynTag>>,
     mut debugStatus: ResMut<DebugStatus>,
     mut local: Local<bool>,
 ) {
@@ -54,9 +50,8 @@ fn step(
 ) {
     if mouseInput.just_pressed(MouseButton::Middle) {
         let mut ids = random_xy(1000, 1000)
-            .take(1)
-            .map(|[x, y]| createCollision(&mut commands, x, y))
+            .take(1000)
+            .map(|[x, y]| createDynCollision(&mut commands, x, y))
             .collect::<Vec<_>>();
-        // println!("碰撞物 ids: {:?}", ids);
     }
 }

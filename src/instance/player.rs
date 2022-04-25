@@ -1,5 +1,5 @@
 use crate::state::loading::SpriteCenter;
-use crate::systems::collision::{CollisionID, CollisionTag};
+use crate::systems::collision::{CollisionBot, CollisionConfig, CollisionDynTag, CollisionID};
 use crate::systems::debug::DebugStatus;
 use crate::systems::input::InsInput;
 use crate::systems::stateMachine::{Info, InsState, StateChangeEvt, StateInfo, StateMachine};
@@ -19,6 +19,9 @@ pub struct PlayerTag;
 pub struct PlayerProps {
     pub spd: f32,
 }
+
+#[derive(Component)]
+pub struct PlayerCollisionDynTag;
 
 impl Info for InsState {
     fn _get(&self) -> StateInfo {
@@ -68,28 +71,10 @@ pub fn player_create(
     }
 
     for _ in 0..1 {
-        let shape = shapes::Rectangle {
-            extents: Vec2::new(20.0, 10.0),
-            origin: RectangleOrigin::Center,
-        };
-        let collisionChildId = commands
-            .spawn_bundle(GeometryBuilder::build_as(
-                &shape,
-                DrawMode::Outlined {
-                    fill_mode: FillMode::color(Color::CYAN),
-                    outline_mode: StrokeMode::new(Color::BLACK, 1.0),
-                },
-                Transform::from_translation(Vec3::new(0., -20.0, 0.0)),
-            ))
-            .insert(CollisionTag)
-            .insert(Name::new("collision"))
-            .insert(Visibility { is_visible: false })
-            .id();
-
-        let parentId = commands
+        let instanceId = commands
             .spawn_bundle(SpriteSheetBundle {
                 transform: Transform {
-                    translation: Vec3::new(0.0, 0.0, 10.0),
+                    translation: Vec3::new(0.0, 20.0, 10.0),
                     ..Default::default()
                 },
                 texture_atlas: spriteCenter.0.get("player").unwrap().clone(),
@@ -102,34 +87,74 @@ pub fn player_create(
             .insert(InsState(StateMachine::Idle))
             .insert(Name::new("player".to_string()))
             .insert(PlayerTag)
-            .insert(CollisionID(collisionChildId))
-            .push_children(&[collisionChildId])
             .id();
 
-        commands.insert_resource(GLobalPlayerID(parentId));
+        let shape = shapes::Rectangle {
+            extents: Vec2::new(20.0, 10.0),
+            origin: RectangleOrigin::Center,
+        };
+        let collisionId = commands
+            .spawn_bundle(GeometryBuilder::build_as(
+                &shape,
+                DrawMode::Outlined {
+                    fill_mode: FillMode::color(Color::CYAN),
+                    outline_mode: StrokeMode::new(Color::BLACK, 1.0),
+                },
+                Transform::from_translation(Vec3::new(0., 0.0, 0.0)),
+            ))
+            .insert(CollisionDynTag)
+            .insert(CollisionBot {
+                pos: Vec2::new(0.0, 0.0),
+                vel: Vec2::new(0.0, 0.0),
+                force: Vec2::new(0.0, 0.0),
+                wall_move: [None; 2],
+            })
+            .insert(CollisionConfig {
+                width: 10,
+                height: 5,
+            })
+            .insert(PlayerCollisionDynTag)
+            .insert(Name::new("playerCollision"))
+            .insert(Visibility { is_visible: false })
+            .push_children(&[instanceId])
+            .id();
+
+        // player后置添加
+        commands.entity(instanceId).insert(CollisionID(collisionId));
+
+        commands.insert_resource(GLobalPlayerID(instanceId));
     }
 }
 
 pub fn player_step(
     time: Res<Time>,
-    mut player_query: Query<
-        (
-            Entity,
-            &mut Transform,
-            &PlayerProps,
-            &mut InsInput,
-            &mut InsState,
-        ),
-        With<PlayerTag>,
-    >,
+    mut set: ParamSet<(
+        Query<
+            (
+                Entity,
+                &mut Transform,
+                &PlayerProps,
+                &InsInput,
+                &mut InsState,
+            ),
+            With<PlayerTag>,
+        >,
+        Query<(&mut Transform), With<PlayerCollisionDynTag>>,
+    )>,
+
     mut changeStateSend: EventWriter<StateChangeEvt>,
     debugStatus: Res<DebugStatus>,
 ) {
-    if (debugStatus.camera_debug) {
+    // 有输入=>移动逻辑
+    if debugStatus.camera_debug {
         return;
     }
-    for (entity, mut trans, props, mut input, mut insState) in player_query.iter_mut() {
-        if (input.dir.length() == 0.0) {
+    let mut playerQuery = set.p0();
+
+    let mut nextLen = Vec2::splat(0.0);
+
+    for (entity, mut trans, props, input, mut insState) in playerQuery.iter_mut() {
+        if input.dir.length() == 0.0 {
             changeStateSend.send(StateChangeEvt {
                 ins: entity,
                 newState: StateMachine::Idle,
@@ -141,8 +166,15 @@ pub fn player_step(
                 newState: StateMachine::Walk,
                 xDir: input.dir.x,
             });
-            trans.translation.x += input.dir.x * props.spd * time.delta_seconds();
-            trans.translation.y += input.dir.y * props.spd * time.delta_seconds();
+            nextLen.x = input.dir.x * props.spd * time.delta_seconds();
+            nextLen.y = input.dir.y * props.spd * time.delta_seconds();
         }
+    }
+
+    let mut collisionQuery = set.p1();
+
+    for mut transform in collisionQuery.iter_mut() {
+        transform.translation.x += nextLen.x;
+        transform.translation.y += nextLen.y;
     }
 }

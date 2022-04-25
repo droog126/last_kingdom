@@ -44,7 +44,7 @@ fn step(mut commands: Commands, debugStatus: Res<DebugStatus>) {}
 
 // 触发器
 
-use crate::systems::collision::CollisionTag;
+use crate::systems::collision::CollisionDynTag;
 use bevy::{ecs::schedule::ShouldRun, prelude::*};
 use bevy_prototype_lyon::prelude::*;
 use rand::prelude::*;
@@ -75,7 +75,7 @@ fn startup(mut commands: Commands) {}
 
 fn trigger(
     mut commands: Commands,
-    query: Query<Entity, With<CollisionTag>>,
+    query: Query<Entity, With<CollisionDynTag>>,
     mut debugStatus: ResMut<DebugStatus>,
 ) {
     let shape = shapes::Rectangle {
