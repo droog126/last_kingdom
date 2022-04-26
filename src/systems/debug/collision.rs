@@ -1,7 +1,7 @@
 use crate::{
-    instance::utils::createDynCollision,
+    instance::utils::{createDynCollision, createStaCollision},
     systems::{camera::CursorPosition, collision::CollisionDynTag},
-    utils::random::random_xy,
+    utils::random::{random_arr2, random_arr4},
 };
 use bevy::{ecs::schedule::ShouldRun, prelude::*};
 
@@ -49,9 +49,24 @@ fn step(
     mut commands: Commands,
 ) {
     if mouseInput.just_pressed(MouseButton::Middle) {
-        let mut ids = random_xy(1000, 1000)
+        let mut ids = random_arr2(1000, 1000)
             .take(1000)
             .map(|[x, y]| createDynCollision(&mut commands, x, y))
+            .collect::<Vec<_>>();
+    }
+
+    if mouseInput.just_pressed(MouseButton::Right) {
+        let mut ids = random_arr4(1000, 1000, 100, 100)
+            .take(2)
+            .map(|[x, y, width, height]| {
+                createStaCollision(
+                    &mut commands,
+                    x as f32,
+                    y as f32,
+                    width as f32,
+                    height as f32,
+                )
+            })
             .collect::<Vec<_>>();
     }
 }

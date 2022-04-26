@@ -34,7 +34,8 @@ https://github.com/jcornaz/impacted
 
 静态标签区分
 静态实例生产
-    随机宽高迭代器
+    随机宽高迭代器 完成
+    实装位移逻辑
     
 静态动态系统  可以附加在动动碰撞上
 
@@ -46,6 +47,7 @@ https://github.com/jcornaz/impacted
 7. 怪物
 8. pvp
 9. 联网
+10. debug 改成命令行
 
 ### 记录
 bevy_prototype_lyon 画图性能很烂

@@ -110,8 +110,8 @@ pub fn player_create(
                 wall_move: [None; 2],
             })
             .insert(CollisionConfig {
-                width: 10,
-                height: 5,
+                width: 20,
+                height: 10,
             })
             .insert(PlayerCollisionDynTag)
             .insert(Name::new("playerCollision"))

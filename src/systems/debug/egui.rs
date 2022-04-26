@@ -1,4 +1,4 @@
-use crate::systems::{input::InsInput, stateMachine::InsState};
+use crate::systems::{collision::CollisionConfig, input::InsInput, stateMachine::InsState};
 use bevy::prelude::*;
 use bevy_inspector_egui::{Inspectable, RegisterInspectable, WorldInspectorPlugin};
 
@@ -11,6 +11,7 @@ impl Plugin for EGuiPlugin {
             // .add_plugin(EditorPlugin);
             // .register_inspectable::<InsInput>()
             .register_type::<InsInput>()
+            .register_type::<CollisionConfig>()
             .add_plugin(WorldInspectorPlugin::new());
     }
 }

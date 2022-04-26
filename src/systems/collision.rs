@@ -5,7 +5,9 @@ use duckduckgeo::{self, ErrTooClose};
 use broccoli::{
     axgeom::Rect,
     prelude::*,
+    queries::intersect_with::intersect_with_iter_mut,
     tree::{
+        aabb_pin::AabbPin,
         bbox,
         node::{BBox, Num},
         rect,
@@ -16,6 +18,10 @@ use broccoli::{
 pub struct CollisionDynTag;
 
 #[derive(Component)]
+pub struct CollisionStaTag;
+
+#[derive(Reflect, Component, Default, Debug)]
+#[reflect(Component)]
 pub struct CollisionConfig {
     pub width: i32,
     pub height: i32,
@@ -56,17 +62,39 @@ fn startup(mut commands: Commands) {}
 
 // 需要在接受输入同步新位置后调用
 fn step(
-    mut query: Query<
-        (&mut Transform, &mut CollisionBot, Option<&CollisionConfig>),
-        With<CollisionDynTag>,
-    >,
+    mut set: ParamSet<(
+        // 好像静态物体不需要bot
+        Query<(&Transform, &mut CollisionBot, Option<&CollisionConfig>), With<CollisionStaTag>>,
+        Query<(&mut Transform, &mut CollisionBot, Option<&CollisionConfig>), With<CollisionDynTag>>,
+    )>,
 ) {
-    // println!("start");
+    // 1. 动静碰撞，先收集静态物体
 
+    let mut staQuery = set.p0();
+    let mut staVec = vec![];
+    for (transform, mut collisionBot, collisionConfig) in staQuery.iter_mut() {
+        let mut target = match collisionConfig {
+            None => Rect::new(
+                transform.translation.x - 5.,
+                transform.translation.x + 5.,
+                transform.translation.y - 5.,
+                transform.translation.y + 5.,
+            ),
+            Some(config) => Rect::new(
+                transform.translation.x - config.width as f32 / 2.,
+                transform.translation.x + config.width as f32 / 2.,
+                transform.translation.y - config.height as f32 / 2.,
+                transform.translation.y + config.height as f32 / 2.,
+            ),
+        };
+        staVec.push(target);
+    }
+
+    let mut dynQuery = set.p1();
     // 1.转换shap->rect;
     let mut aabbs: Vec<BBox<f32, _>> = Vec::new();
 
-    for (mut transform, mut collisionBot, collisionConfig) in query.iter_mut() {
+    for (mut transform, mut collisionBot, collisionConfig) in dynQuery.iter_mut() {
         transform.translation.x += collisionBot.force.x;
         transform.translation.y += collisionBot.force.y;
         collisionBot.force = Vec2::new(0., 0.);
@@ -84,10 +112,10 @@ fn step(
             ),
             Some(config) => bbox(
                 rect(
-                    transform.translation.x - config.width as f32,
-                    transform.translation.x + config.width as f32,
-                    transform.translation.y - config.height as f32,
-                    transform.translation.y + config.height as f32,
+                    transform.translation.x - config.width as f32 / 2.,
+                    transform.translation.x + config.width as f32 / 2.,
+                    transform.translation.y - config.height as f32 / 2.,
+                    transform.translation.y + config.height as f32 / 2.,
                 ),
                 collisionBot,
             ),
@@ -95,20 +123,29 @@ fn step(
         aabbs.push(target);
     }
 
-    println!("len: {:?}", aabbs.len());
+    // println!("len: {:?}", aabbs.len());
 
     let mut tree = broccoli::tree::new_par(&mut aabbs);
 
+    // 动静碰撞
+    // 完全在方块里面才会有这个错误
+    intersect_with_iter_mut(
+        &mut tree,
+        AabbPin::new(staVec.as_mut_slice()).iter_mut(),
+        |mut bot, staCollision| {
+            let (rect, bot) = bot.destruct_mut();
+
+            println!(" {:?} {:?}", rect, staCollision);
+        },
+    );
+
+    // 动动碰撞
     tree.colliding_pairs_builder(|a, b| {
         let a = a.unpack_inner();
         let b = b.unpack_inner();
-        // println!("碰撞前 {:?}  {:?}", a, b);
         let _ = repel([(a.pos, &mut a.force), (b.pos, &mut b.force)], 0.001, 1.);
-
-        // println!("碰撞后 {:?}  {:?}", a, b);
     })
     .build_par();
-    // println!("aabbs: {:?}", aabbs);
 }
 
 pub fn repel(bots: [(Vec2, &mut Vec2); 2], closest: f32, mag: f32) -> Result<(), ErrTooClose> {
