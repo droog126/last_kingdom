@@ -11,7 +11,7 @@ impl Plugin for CollisionDebugPlugin {
     fn build(&self, app: &mut App) {
         app.add_startup_system(startup).add_system_set(
             SystemSet::new()
-                .with_system(trigger)
+                .with_system(first)
                 .with_system(step)
                 .with_run_criteria(need_run),
         );
@@ -28,7 +28,7 @@ fn need_run(debugStatus: Res<DebugStatus>) -> ShouldRun {
 
 fn startup(mut commands: Commands) {}
 
-fn trigger(
+fn first(
     mut commands: Commands,
     mut query: Query<&mut Visibility, With<CollisionDynTag>>,
     mut debugStatus: ResMut<DebugStatus>,
@@ -50,7 +50,7 @@ fn step(
 ) {
     if mouseInput.just_pressed(MouseButton::Middle) {
         let mut ids = random_arr2(1000, 1000)
-            .take(1000)
+            .take(100)
             .map(|[x, y]| createDynCollision(&mut commands, x, y))
             .collect::<Vec<_>>();
     }

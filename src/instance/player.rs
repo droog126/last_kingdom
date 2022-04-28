@@ -105,7 +105,6 @@ pub fn player_create(
             .insert(CollisionDynTag)
             .insert(CollisionBot {
                 pos: Vec2::new(0.0, 0.0),
-                vel: Vec2::new(0.0, 0.0),
                 force: Vec2::new(0.0, 0.0),
                 wall_move: [None; 2],
             })

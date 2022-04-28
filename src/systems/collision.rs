@@ -40,9 +40,8 @@ pub struct GlobalAabbs(Vec<BBox<i32, i32>>);
 #[derive(Copy, Clone, Component, Debug)]
 pub struct CollisionBot {
     pub pos: Vec2,
-    pub vel: Vec2,
     pub force: Vec2,
-    pub wall_move: [Option<(f32, f32)>; 2],
+    pub wall_move: [Option<f32>; 2],
 }
 
 pub struct CollisionPlugin;
@@ -69,57 +68,74 @@ fn step(
     )>,
 ) {
     // 1. 动静碰撞，先收集静态物体
-
     let mut staQuery = set.p0();
     let mut staVec = vec![];
     for (transform, mut collisionBot, collisionConfig) in staQuery.iter_mut() {
-        let mut target = match collisionConfig {
-            None => Rect::new(
-                transform.translation.x - 5.,
-                transform.translation.x + 5.,
-                transform.translation.y - 5.,
-                transform.translation.y + 5.,
-            ),
-            Some(config) => Rect::new(
-                transform.translation.x - config.width as f32 / 2.,
-                transform.translation.x + config.width as f32 / 2.,
-                transform.translation.y - config.height as f32 / 2.,
-                transform.translation.y + config.height as f32 / 2.,
-            ),
-        };
+        let mut configWidth = 5.;
+        let mut configHeight = 5.;
+        if let Some(CollisionConfig { width, height }) = collisionConfig {
+            configWidth = *width as f32;
+            configHeight = *height as f32;
+        }
+        let mut target = Rect::new(
+            transform.translation.x - configWidth / 2.,
+            transform.translation.x + configWidth / 2.,
+            transform.translation.y - configHeight / 2.,
+            transform.translation.y + configHeight / 2.,
+        );
         staVec.push(target);
     }
 
     let mut dynQuery = set.p1();
-    // 1.转换shap->rect;
     let mut aabbs: Vec<BBox<f32, _>> = Vec::new();
 
     for (mut transform, mut collisionBot, collisionConfig) in dynQuery.iter_mut() {
+        let mut configWidth = 5.;
+        let mut configHeight = 5.;
+        if let Some(CollisionConfig { width, height }) = collisionConfig {
+            configWidth = *width as f32;
+            configHeight = *height as f32;
+        }
+
+        // 动动碰撞影响
         transform.translation.x += collisionBot.force.x;
         transform.translation.y += collisionBot.force.y;
         collisionBot.force = Vec2::new(0., 0.);
 
+        // 静静碰撞影响
+        if let Some(dir) = collisionBot.wall_move[0] {
+            if let Some(pos) = collisionBot.wall_move[1] {
+                match dir {
+                    1. => {
+                        transform.translation.y = pos - configHeight / 2. - 0.1;
+                    }
+                    2. => {
+                        transform.translation.x = pos + configWidth / 2. + 0.1;
+                    }
+                    3. => {
+                        transform.translation.y = pos + configHeight / 2. + 0.1;
+                    }
+                    4. => {
+                        transform.translation.x = pos - configWidth / 2. - 0.1;
+                    }
+                    _ => {}
+                }
+            }
+        }
+
+        collisionBot.wall_move[0] = None;
+        collisionBot.wall_move[1] = None;
         collisionBot.pos = transform.translation.xy();
-        let mut target = match collisionConfig {
-            None => bbox(
-                rect(
-                    transform.translation.x - 5.,
-                    transform.translation.x + 5.,
-                    transform.translation.y - 5.,
-                    transform.translation.y + 5.,
-                ),
-                collisionBot,
+
+        let mut target = bbox(
+            rect(
+                transform.translation.x - configWidth / 2.,
+                transform.translation.x + configWidth / 2.,
+                transform.translation.y - configHeight / 2.,
+                transform.translation.y + configHeight / 2.,
             ),
-            Some(config) => bbox(
-                rect(
-                    transform.translation.x - config.width as f32 / 2.,
-                    transform.translation.x + config.width as f32 / 2.,
-                    transform.translation.y - config.height as f32 / 2.,
-                    transform.translation.y + config.height as f32 / 2.,
-                ),
-                collisionBot,
-            ),
-        };
+            collisionBot,
+        );
         aabbs.push(target);
     }
 
@@ -127,19 +143,25 @@ fn step(
 
     let mut tree = broccoli::tree::new_par(&mut aabbs);
 
-    // 动静碰撞
-    // 完全在方块里面才会有这个错误
-    intersect_with_iter_mut(
-        &mut tree,
-        AabbPin::new(staVec.as_mut_slice()).iter_mut(),
-        |mut bot, staCollision| {
-            let (rect, bot) = bot.destruct_mut();
+    // 动静碰撞  把碰撞的那边坐标传过去
+    let mut hello = AabbPin::new(staVec.as_mut_slice());
+    for i in AabbPin::new(staVec.as_mut_slice()).iter_mut() {
+        tree.for_all_intersect_rect_mut(i, |r, mut a| {
+            let (rect, bot) = a.destruct_mut();
 
-            println!(" {:?} {:?}", rect, staCollision);
-        },
-    );
+            let wallx = &r.x;
+            let wally = &r.y;
+            let ret = match duckduckgeo::collide_with_rect(&rect, &r).unwrap() {
+                duckduckgeo::WallSide::Above => [Some(1.), Some(wally.start)],
+                duckduckgeo::WallSide::Below => [Some(3.), Some(wally.end)],
+                duckduckgeo::WallSide::LeftOf => [Some(4.), Some(wallx.start)],
+                duckduckgeo::WallSide::RightOf => [Some(2.), Some(wallx.end)],
+            };
+            bot.wall_move = ret;
+        })
+    }
 
-    // 动动碰撞
+    // 动动碰撞  根据pos 计算出force
     tree.colliding_pairs_builder(|a, b| {
         let a = a.unpack_inner();
         let b = b.unpack_inner();

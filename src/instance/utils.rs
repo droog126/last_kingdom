@@ -20,12 +20,11 @@ pub fn createDynCollision(commands: &mut Commands, x: f32, y: f32) -> Entity {
         .insert(CollisionDynTag)
         .insert(CollisionBot {
             pos: Vec2::new(x, y),
-            vel: Vec2::new(0.0, 0.0),
             force: Vec2::new(0.0, 0.0),
             wall_move: [None; 2],
         })
         .insert(Name::new("collision"))
-        .insert(Visibility { is_visible: false })
+        // .insert(Visibility { is_visible: false })
         .id();
 
     return collisionChildId;
@@ -38,10 +37,10 @@ pub fn createStaCollision(
     width: f32,
     height: f32,
 ) -> Entity {
-    println!(
-        "createStaCollision x = {}, y = {}, width = {}, height = {}",
-        x, y, width, height
-    );
+    // println!(
+    //     "createStaCollision x = {}, y = {}, width = {}, height = {}",
+    //     x, y, width, height
+    // );
     let shape = shapes::Rectangle {
         extents: Vec2::new(width, height),
         origin: RectangleOrigin::Center,
@@ -58,7 +57,6 @@ pub fn createStaCollision(
         .insert(CollisionStaTag)
         .insert(CollisionBot {
             pos: Vec2::new(x, y),
-            vel: Vec2::new(0.0, 0.0),
             force: Vec2::new(0.0, 0.0),
             wall_move: [None; 2],
         })
