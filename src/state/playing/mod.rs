@@ -13,10 +13,9 @@ impl Plugin for PlayingPlugin {
         )
         .add_system_set(
             SystemSet::on_update(GameState::Playing)
-                // .with_run_criteria(FixedTimestep::step(0.015))
+                .with_system(playing_setup)
                 .with_system(player_step),
         )
-        .add_system_set(SystemSet::on_update(GameState::Playing).with_system(playing_setup))
         .add_system_set(SystemSet::on_exit(GameState::Playing).with_system(playing_exit));
     }
 
@@ -25,8 +24,14 @@ impl Plugin for PlayingPlugin {
     }
 }
 
-fn playing_enter(mut commands: Commands) {
-    println!("游戏开始")
+fn playing_enter(mut commands: Commands, asset_server: Res<AssetServer>) {
+    println!("游戏开始");
+    let texture: Handle<Image> = asset_server.load("title/firstUser/png/Level_0.png");
+    commands.spawn_bundle(SpriteBundle {
+        texture: texture.clone(),
+        ..default()
+    });
+    // 暂时在这里创建instance
 }
 
 fn playing_setup() {

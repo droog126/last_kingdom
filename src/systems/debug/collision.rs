@@ -50,7 +50,7 @@ fn step(
 ) {
     if mouseInput.just_pressed(MouseButton::Middle) {
         let mut ids = random_arr2(1000, 1000)
-            .take(100)
+            .take(1000)
             .map(|[x, y]| createDynCollision(&mut commands, x, y))
             .collect::<Vec<_>>();
     }

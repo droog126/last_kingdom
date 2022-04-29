@@ -2,6 +2,7 @@ use crate::state::loading::SpriteCenter;
 use crate::systems::collision::{CollisionBot, CollisionConfig, CollisionDynTag, CollisionID};
 use crate::systems::debug::DebugStatus;
 use crate::systems::input::InsInput;
+use crate::systems::instance::shadow::ShadowAsset;
 use crate::systems::stateMachine::{Info, InsState, StateChangeEvt, StateInfo, StateMachine};
 use bevy_prototype_lyon::prelude::*;
 
@@ -51,6 +52,7 @@ pub fn player_create(
     mut spriteCenter: ResMut<SpriteCenter>,
     asset_server: Res<AssetServer>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+    shadowHandle: Res<ShadowAsset>,
 ) {
     println!("我是否是第一次调用{:?}", local);
 
@@ -71,6 +73,19 @@ pub fn player_create(
     }
 
     for _ in 0..1 {
+        // 阴影实体
+        let shadowId = commands
+            .spawn_bundle(SpriteBundle {
+                texture: shadowHandle.clone(),
+                transform: Transform {
+                    scale: Vec3::new(1.0, 0.5, 0.0),
+                    ..default()
+                },
+                ..default()
+            })
+            .id();
+
+        // 人物实体
         let instanceId = commands
             .spawn_bundle(SpriteSheetBundle {
                 transform: Transform {
@@ -80,7 +95,7 @@ pub fn player_create(
                 texture_atlas: spriteCenter.0.get("player").unwrap().clone(),
                 ..Default::default()
             })
-            .insert(PlayerProps { spd: 300.0 })
+            .insert(PlayerProps { spd: 200.0 })
             .insert(InsInput {
                 ..Default::default()
             })
@@ -100,7 +115,7 @@ pub fn player_create(
                     fill_mode: FillMode::color(Color::CYAN),
                     outline_mode: StrokeMode::new(Color::BLACK, 1.0),
                 },
-                Transform::from_translation(Vec3::new(0., 0.0, 0.0)),
+                Transform::from_translation(Vec3::new(0., 0.0, 1.0)),
             ))
             .insert(CollisionDynTag)
             .insert(CollisionBot {
@@ -115,7 +130,7 @@ pub fn player_create(
             .insert(PlayerCollisionDynTag)
             .insert(Name::new("playerCollision"))
             .insert(Visibility { is_visible: false })
-            .push_children(&[instanceId])
+            .push_children(&[instanceId, shadowId])
             .id();
 
         // player后置添加

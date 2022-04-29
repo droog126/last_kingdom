@@ -139,7 +139,7 @@ fn step(
         aabbs.push(target);
     }
 
-    // println!("len: {:?}", aabbs.len());
+    println!("len: {:?}", aabbs.len());
 
     let mut tree = broccoli::tree::new_par(&mut aabbs);
 
