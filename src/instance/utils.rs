@@ -33,7 +33,7 @@ pub fn createDynCollision(commands: &mut Commands, x: f32, y: f32) -> Entity {
             wall_move: [None; 2],
         })
         .insert(Name::new("collision"))
-        // .insert(Visibility { is_visible: false })
+        .insert(Visibility { is_visible: false })
         .id();
 
     return collisionChildId;
@@ -74,7 +74,7 @@ pub fn createStaCollision(
             height: height as i32,
         })
         .insert(Name::new("collision"))
-        // .insert(Visibility { is_visible: false })
+        .insert(Visibility { is_visible: false })
         .id();
 
     return (collisionChildId);

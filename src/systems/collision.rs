@@ -14,6 +14,8 @@ use broccoli::{
     },
 };
 
+use super::debug::egui::DebugTable;
+
 #[derive(Component)]
 pub struct CollisionDynTag;
 
@@ -66,6 +68,7 @@ fn step(
         Query<(&Transform, &mut CollisionBot, Option<&CollisionConfig>), With<CollisionStaTag>>,
         Query<(&mut Transform, &mut CollisionBot, Option<&CollisionConfig>), With<CollisionDynTag>>,
     )>,
+    mut debugTable: ResMut<DebugTable>,
 ) {
     // 1. 动静碰撞，先收集静态物体
     let mut staQuery = set.p0();
@@ -139,7 +142,10 @@ fn step(
         aabbs.push(target);
     }
 
-    println!("len: {:?}", aabbs.len());
+    #[cfg(debug_assertions)]
+    {
+        debugTable.collisionCount = Some(aabbs.len());
+    }
 
     let mut tree = broccoli::tree::new_par(&mut aabbs);
 

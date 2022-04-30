@@ -5,3 +5,4 @@ pub mod input;
 pub mod instance;
 pub mod stateMachine;
 pub mod title;
+pub mod ui;

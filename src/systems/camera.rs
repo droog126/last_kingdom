@@ -1,6 +1,6 @@
 use bevy::{prelude::*, render::camera::RenderTarget};
 
-use crate::instance::player::PlayerTag;
+use crate::{instance::player::PlayerTag, utils::num::MyQueue};
 
 use super::{debug::DebugStatus, input::InsInput};
 
@@ -10,6 +10,13 @@ pub struct MainCameraTag;
 pub struct CursorPosition {
     x: f32,
     y: f32,
+}
+
+pub struct DiffQueue(MyQueue);
+impl FromWorld for DiffQueue {
+    fn from_world(world: &mut World) -> Self {
+        DiffQueue(MyQueue::new(3))
+    }
 }
 
 pub struct CameraPlugin;
@@ -37,6 +44,7 @@ fn camera_step(
         Query<(&Camera, &mut Transform), With<MainCameraTag>>,
         Query<(&InsInput, &GlobalTransform), With<PlayerTag>>,
     )>,
+    mut diffQueue: Local<DiffQueue>,
 ) {
     let mut dir = None;
     let mut playerPosition = None;
@@ -80,12 +88,13 @@ fn camera_step(
                 unwrapPlayerPosition.z = camera_transform.translation.z;
 
                 let diff = camera_transform.translation - unwrapPlayerPosition;
-
-                // println!("diff:{:?}", diff);
+                let diffLen = diff.length();
                 //1/4秒回到目标身上
                 let factor = time.delta_seconds() * 4.0;
+                diffQueue.0.add(diffLen);
+                let iSIncreased = diffQueue.0.iSIncreased();
 
-                if diff.length() <= factor {
+                if !iSIncreased && diffLen <= 0.8 {
                     camera_transform.translation = unwrapPlayerPosition;
                 } else {
                     camera_transform.translation -= diff * factor;
