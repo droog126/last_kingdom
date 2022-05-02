@@ -7,6 +7,7 @@
 
 
 # todo
+
 5. 地图编辑(等待1.0支持)
 
 已经支持了，下一个todo
@@ -44,7 +45,7 @@ https://github.com/jcornaz/impacted
 
 7. ui试点
 https://github.com/mvlabat/bevy_egui.git
-7.1 按M呼出菜单
+7.1 按M呼出菜单(X)
 7.2 优化文字显示(done)
 7.3 碰撞实例个数显示(done)
 
