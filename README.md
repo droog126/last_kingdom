@@ -49,11 +49,13 @@ https://github.com/mvlabat/bevy_egui.git
 7.3 碰撞实例个数显示(done)
 
 8. 怪物
-8.1 素材
+8.1 素材(done)
 骷髅射手吧
-
-
+还是改成了蛇，
+那个素材找不到了，
+完成了蛇的生成
 8.2 ai
+赋予蛇ai
 
 
 
@@ -101,9 +103,9 @@ cargo run --features bevy/trace_chrome
 # debug
 
 1.相机解锁 f3 DebugStatus.camera_debug
-2.fps显示 f11 DebugStatus.fps_show
 3.碰撞体积显示 f12   DebugStatus.collision_debug
 4.放置怪物  f10  DebugStatus.instance_debug
 
 
 
+<!-- 2.fps显示 f11 DebugStatus.fps_show -->
