@@ -1,15 +1,23 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, render::camera::RenderTarget};
 
-use crate::instance::player::PlayerTag;
+use crate::{instance::player::PlayerTag, utils::num::MyQueue};
 
 use super::{debug::DebugStatus, input::InsInput};
 
 #[derive(Component)]
 pub struct MainCameraTag;
 
+#[derive(Debug)]
 pub struct CursorPosition {
-    x: f32,
-    y: f32,
+    pub x: f32,
+    pub y: f32,
+}
+
+pub struct DiffQueue(MyQueue);
+impl FromWorld for DiffQueue {
+    fn from_world(world: &mut World) -> Self {
+        DiffQueue(MyQueue::new(3))
+    }
 }
 
 pub struct CameraPlugin;
@@ -33,61 +41,65 @@ fn camera_step(
     time: Res<Time>,
     mut cursorPosition: ResMut<CursorPosition>,
     debugStatus: Res<DebugStatus>,
-    mut query: QuerySet<(
-        QueryState<(&Camera, &mut Transform), With<MainCameraTag>>,
-        QueryState<(&InsInput, &GlobalTransform), With<PlayerTag>>,
+    mut set: ParamSet<(
+        Query<(&Camera, &mut Transform), With<MainCameraTag>>,
+        Query<(&InsInput, &GlobalTransform), With<PlayerTag>>,
     )>,
+    mut diffQueue: Local<DiffQueue>,
 ) {
     let mut dir = None;
     let mut playerPosition = None;
 
-    for (insInput, playerTransform) in query.q1().iter() {
+    for (insInput, playerTransform) in set.p1().iter() {
         dir = Some(insInput.dir.clone());
         playerPosition = Some(playerTransform.translation);
     }
 
     // 捕获鼠标在Camera的坐标
-    for (camera, mut camera_transform) in query.q0().iter_mut() {
-        let wnd = wnds.get(camera.window).unwrap();
+    for (camera, mut camera_transform) in set.p0().iter_mut() {
+        if let RenderTarget::Window(winId) = camera.target {
+            let wnd = wnds.get(winId).unwrap();
 
-        // check if the cursor is inside the window and get its position
-        if let Some(screen_pos) = wnd.cursor_position() {
-            let window_size = Vec2::new(wnd.width() as f32, wnd.height() as f32);
-            let ndc = (screen_pos / window_size) * 2.0 - Vec2::ONE;
+            // check if the cursor is inside the window and get its position
+            if let Some(screen_pos) = wnd.cursor_position() {
+                let window_size = Vec2::new(wnd.width() as f32, wnd.height() as f32);
+                let ndc = (screen_pos / window_size) * 2.0 - Vec2::ONE;
 
-            // matrix for undoing the projection and camera transform
-            let ndc_to_world =
-                camera_transform.compute_matrix() * camera.projection_matrix.inverse();
+                // matrix for undoing the projection and camera transform
+                let ndc_to_world =
+                    camera_transform.compute_matrix() * camera.projection_matrix.inverse();
 
-            let world_pos = ndc_to_world.project_point3(ndc.extend(-1.0));
+                let world_pos = ndc_to_world.project_point3(ndc.extend(-1.0));
 
-            let world_pos: Vec2 = world_pos.truncate();
-            cursorPosition.x = world_pos.x;
-            cursorPosition.y = world_pos.y;
-        }
+                let world_pos: Vec2 = world_pos.truncate();
+                cursorPosition.x = world_pos.x;
+                cursorPosition.y = world_pos.y;
+            }
 
-        // 任务:debug控制相机
-        if (debugStatus.camera_debug && dir != None) {
-            let unwrapDir = dir.unwrap();
-            camera_transform.translation.x += unwrapDir.x;
-            camera_transform.translation.y += unwrapDir.y;
-        }
+            // 任务:debug控制相机
+            if (debugStatus.camera_debug && dir != None) {
+                let unwrapDir = dir.unwrap();
+                camera_transform.translation.x += unwrapDir.x;
+                camera_transform.translation.y += unwrapDir.y;
+            }
 
-        // 任务:跟随玩家
-        if (!debugStatus.camera_debug && playerPosition != None) {
-            let mut unwrapPlayerPosition = playerPosition.unwrap();
-            unwrapPlayerPosition.z = camera_transform.translation.z;
+            // 任务:跟随玩家
+            if (!debugStatus.camera_debug && playerPosition != None) {
+                let mut unwrapPlayerPosition = playerPosition.unwrap();
+                unwrapPlayerPosition.z = camera_transform.translation.z;
 
-            let diff = camera_transform.translation - unwrapPlayerPosition;
+                let diff = camera_transform.translation - unwrapPlayerPosition;
+                let diffLen = diff.length();
+                //1/4秒回到目标身上
+                let factor = time.delta_seconds() * 4.0;
+                diffQueue.0.add(diffLen);
+                let iSIncreased = diffQueue.0.iSIncreased();
 
-            // println!("diff:{:?}", diff);
-            //1/4秒回到目标身上
-            let factor = time.delta_seconds() * 4.0;
-
-            if diff.length() <= factor {
-                camera_transform.translation = unwrapPlayerPosition;
-            } else {
-                camera_transform.translation -= diff * factor;
+                if !iSIncreased && diffLen <= 0.8 {
+                    camera_transform.translation = unwrapPlayerPosition;
+                } else {
+                    camera_transform.translation -= diff * factor;
+                }
             }
         }
     }

@@ -2,13 +2,7 @@ use bevy::prelude::*;
 pub struct TitlePlugin;
 impl Plugin for TitlePlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(startup)
-            .add_system(step)
-            .add_system_set(
-                SystemSet::new()
-                    .with_system(step)
-                    .with_run_criteria(FixedTimestep::step(0.015)),
-            );
+        app.add_startup_system(startup).add_system(step)
     }
 }
 fn startup(mut commands: Commands) {}
@@ -44,7 +38,7 @@ fn step(mut commands: Commands, debugStatus: Res<DebugStatus>) {}
 
 // 触发器
 
-use crate::systems::collision::CollisionTag;
+use crate::systems::collision::CollisionDynTag;
 use bevy::{ecs::schedule::ShouldRun, prelude::*};
 use bevy_prototype_lyon::prelude::*;
 use rand::prelude::*;
@@ -75,7 +69,7 @@ fn startup(mut commands: Commands) {}
 
 fn trigger(
     mut commands: Commands,
-    query: Query<Entity, With<CollisionTag>>,
+    query: Query<Entity, With<CollisionDynTag>>,
     mut debugStatus: ResMut<DebugStatus>,
 ) {
     let shape = shapes::Rectangle {

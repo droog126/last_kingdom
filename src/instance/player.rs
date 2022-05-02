@@ -1,8 +1,9 @@
 use crate::state::loading::SpriteCenter;
-use crate::systems::collision::{CollisionID, CollisionTag};
+use crate::systems::collision::{CollisionBot, CollisionConfig, CollisionDynTag, CollisionID};
 use crate::systems::debug::DebugStatus;
 use crate::systems::input::InsInput;
-use crate::systems::stateMachine::{Info, InsState, StateChangeEvt, StateInfo, StateMachine};
+use crate::systems::instance::shadow::ShadowAsset;
+use crate::systems::stateMachine::{InsState, StateChangeEvt, StateInfo, StateMachine};
 use bevy_prototype_lyon::prelude::*;
 
 use bevy::prelude::*;
@@ -20,25 +21,26 @@ pub struct PlayerProps {
     pub spd: f32,
 }
 
-impl Info for InsState {
-    fn _get(&self) -> StateInfo {
-        match (self.0) {
-            StateMachine::Idle => StateInfo {
-                startIndex: 0,
-                endIndex: 0,
-                spriteName: "player".to_string(),
-            },
-            StateMachine::Walk => StateInfo {
-                startIndex: 8,
-                endIndex: 15,
-                spriteName: "player".to_string(),
-            },
-            _ => StateInfo {
-                startIndex: 0,
-                endIndex: 0,
-                spriteName: "player".to_string(),
-            },
-        }
+#[derive(Component)]
+pub struct PlayerCollisionDynTag;
+
+fn getPlayerSprite(insState: &InsState) -> StateInfo {
+    match (insState.0) {
+        StateMachine::Idle => StateInfo {
+            startIndex: 0,
+            endIndex: 0,
+            spriteName: "player".to_string(),
+        },
+        StateMachine::Walk => StateInfo {
+            startIndex: 8,
+            endIndex: 15,
+            spriteName: "player".to_string(),
+        },
+        _ => StateInfo {
+            startIndex: 0,
+            endIndex: 0,
+            spriteName: "player".to_string(),
+        },
     }
 }
 
@@ -48,10 +50,11 @@ pub fn player_create(
     mut spriteCenter: ResMut<SpriteCenter>,
     asset_server: Res<AssetServer>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+    shadowHandle: Res<ShadowAsset>,
 ) {
     println!("我是否是第一次调用{:?}", local);
 
-    if (*local == true) {
+    if (*local == false) {
         let texture_handle = asset_server.load("sprite/player_sheet.png");
         let sprite_atlas = TextureAtlas::from_grid_with_padding(
             texture_handle.clone(),
@@ -64,72 +67,106 @@ pub fn player_create(
         let sprite_handle = texture_atlases.add(sprite_atlas);
         spriteCenter.0.insert("player".to_string(), sprite_handle);
 
-        *local = false;
+        *local = true;
     }
 
     for _ in 0..1 {
+        // 阴影实体
+        let shadowId = commands
+            .spawn_bundle(SpriteBundle {
+                texture: shadowHandle.clone(),
+                transform: Transform {
+                    scale: Vec3::new(1.0, 0.5, 0.0),
+                    ..default()
+                },
+                ..default()
+            })
+            .id();
+
+        // 人物实体
+        let instanceId = commands
+            .spawn_bundle(SpriteSheetBundle {
+                transform: Transform {
+                    translation: Vec3::new(0.0, 20.0, 10.0),
+                    ..Default::default()
+                },
+                texture_atlas: spriteCenter.0.get("player").unwrap().clone(),
+                ..Default::default()
+            })
+            .insert(PlayerProps { spd: 200.0 })
+            .insert(InsInput {
+                ..Default::default()
+            })
+            .insert(InsState(StateMachine::Idle, getPlayerSprite))
+            .insert(Name::new("player".to_string()))
+            .insert(PlayerTag)
+            .id();
+
         let shape = shapes::Rectangle {
             extents: Vec2::new(20.0, 10.0),
             origin: RectangleOrigin::Center,
         };
-        let collisionChildId = commands
+        let collisionId = commands
             .spawn_bundle(GeometryBuilder::build_as(
                 &shape,
                 DrawMode::Outlined {
                     fill_mode: FillMode::color(Color::CYAN),
                     outline_mode: StrokeMode::new(Color::BLACK, 1.0),
                 },
-                Transform::from_translation(Vec3::new(0., -20.0, 0.0)),
+                Transform::from_translation(Vec3::new(0., 0.0, 1.0)),
             ))
-            .insert(CollisionTag)
-            .insert(Name::new("collision"))
+            .insert(CollisionDynTag)
+            .insert(CollisionBot {
+                pos: Vec2::new(0.0, 0.0),
+                force: Vec2::new(0.0, 0.0),
+                wall_move: [None; 2],
+            })
+            .insert(CollisionConfig {
+                width: 20,
+                height: 10,
+            })
+            .insert(PlayerCollisionDynTag)
+            .insert(Name::new("playerCollision"))
             .insert(Visibility { is_visible: false })
+            .push_children(&[instanceId, shadowId])
             .id();
 
-        let parentId = commands
-            .spawn_bundle(SpriteSheetBundle {
-                transform: Transform {
-                    translation: Vec3::new(0.0, 0.0, 10.0),
-                    ..Default::default()
-                },
-                texture_atlas: spriteCenter.0.get("player").unwrap().clone(),
-                ..Default::default()
-            })
-            .insert(PlayerProps { spd: 300.0 })
-            .insert(InsInput {
-                ..Default::default()
-            })
-            .insert(InsState(StateMachine::Idle))
-            .insert(Name::new("player".to_string()))
-            .insert(PlayerTag)
-            .insert(CollisionID(collisionChildId))
-            .push_children(&[collisionChildId])
-            .id();
+        // player后置添加
+        commands.entity(instanceId).insert(CollisionID(collisionId));
 
-        commands.insert_resource(GLobalPlayerID(parentId));
+        commands.insert_resource(GLobalPlayerID(instanceId));
     }
 }
 
 pub fn player_step(
     time: Res<Time>,
-    mut player_query: Query<
-        (
-            Entity,
-            &mut Transform,
-            &PlayerProps,
-            &mut InsInput,
-            &mut InsState,
-        ),
-        With<PlayerTag>,
-    >,
+    mut set: ParamSet<(
+        Query<
+            (
+                Entity,
+                &mut Transform,
+                &PlayerProps,
+                &InsInput,
+                &mut InsState,
+            ),
+            With<PlayerTag>,
+        >,
+        Query<(&mut Transform), With<PlayerCollisionDynTag>>,
+    )>,
+
     mut changeStateSend: EventWriter<StateChangeEvt>,
     debugStatus: Res<DebugStatus>,
 ) {
-    if (debugStatus.camera_debug) {
+    // 有输入=>移动逻辑
+    if debugStatus.camera_debug {
         return;
     }
-    for (entity, mut trans, props, mut input, mut insState) in player_query.iter_mut() {
-        if (input.dir.length() == 0.0) {
+    let mut playerQuery = set.p0();
+
+    let mut nextLen = Vec2::splat(0.0);
+
+    for (entity, mut trans, props, input, mut insState) in playerQuery.iter_mut() {
+        if input.dir.length() == 0.0 {
             changeStateSend.send(StateChangeEvt {
                 ins: entity,
                 newState: StateMachine::Idle,
@@ -141,8 +178,15 @@ pub fn player_step(
                 newState: StateMachine::Walk,
                 xDir: input.dir.x,
             });
-            trans.translation.x += input.dir.x * props.spd * time.delta_seconds();
-            trans.translation.y += input.dir.y * props.spd * time.delta_seconds();
+            nextLen.x = input.dir.x * props.spd * time.delta_seconds();
+            nextLen.y = input.dir.y * props.spd * time.delta_seconds();
         }
+    }
+
+    let mut collisionQuery = set.p1();
+
+    for mut transform in collisionQuery.iter_mut() {
+        transform.translation.x += nextLen.x;
+        transform.translation.y += nextLen.y;
     }
 }

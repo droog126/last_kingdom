@@ -10,4 +10,5 @@ pub enum GameState {
 
 pub mod loading;
 pub mod menu;
+pub mod origin;
 pub mod playing;

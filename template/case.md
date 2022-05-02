@@ -48,7 +48,7 @@ fn mouse_click_system(mouse_button_input: Res<Input<MouseButton>>) {
 
 // 通过查询找到实例 
 ```rust
-fn step(mut commands: Commands, query: Query<Entity, With<CollisionTag>>) {
+fn step(mut commands: Commands, query: Query<Entity, With<CollisionDynTag>>) {
     for entity in query.iter() {
         commands.entity(entity)
     }
