@@ -3,7 +3,7 @@ use crate::systems::collision::{CollisionBot, CollisionConfig, CollisionDynTag, 
 use crate::systems::debug::DebugStatus;
 use crate::systems::input::InsInput;
 use crate::systems::instance::shadow::ShadowAsset;
-use crate::systems::stateMachine::{Info, InsState, StateChangeEvt, StateInfo, StateMachine};
+use crate::systems::stateMachine::{InsState, StateChangeEvt, StateInfo, StateMachine};
 use bevy_prototype_lyon::prelude::*;
 
 use bevy::prelude::*;
@@ -24,25 +24,23 @@ pub struct PlayerProps {
 #[derive(Component)]
 pub struct PlayerCollisionDynTag;
 
-impl Info for InsState {
-    fn _get(&self) -> StateInfo {
-        match (self.0) {
-            StateMachine::Idle => StateInfo {
-                startIndex: 0,
-                endIndex: 0,
-                spriteName: "player".to_string(),
-            },
-            StateMachine::Walk => StateInfo {
-                startIndex: 8,
-                endIndex: 15,
-                spriteName: "player".to_string(),
-            },
-            _ => StateInfo {
-                startIndex: 0,
-                endIndex: 0,
-                spriteName: "player".to_string(),
-            },
-        }
+fn getPlayerSprite(insState: &InsState) -> StateInfo {
+    match (insState.0) {
+        StateMachine::Idle => StateInfo {
+            startIndex: 0,
+            endIndex: 0,
+            spriteName: "player".to_string(),
+        },
+        StateMachine::Walk => StateInfo {
+            startIndex: 8,
+            endIndex: 15,
+            spriteName: "player".to_string(),
+        },
+        _ => StateInfo {
+            startIndex: 0,
+            endIndex: 0,
+            spriteName: "player".to_string(),
+        },
     }
 }
 
@@ -99,7 +97,7 @@ pub fn player_create(
             .insert(InsInput {
                 ..Default::default()
             })
-            .insert(InsState(StateMachine::Idle))
+            .insert(InsState(StateMachine::Idle, getPlayerSprite))
             .insert(Name::new("player".to_string()))
             .insert(PlayerTag)
             .id();

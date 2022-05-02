@@ -23,7 +23,8 @@ impl Plugin for LoadingPlugin {
             .with_collection::<FontAssets>()
             .continue_to_state(GameState::Menu)
             .build(app);
-        app.init_resource::<SpriteCenter>();
+        app.init_resource::<SpriteCenter>()
+            .add_startup_system(startup);
     }
 }
 
@@ -32,4 +33,22 @@ impl Plugin for LoadingPlugin {
 pub struct FontAssets {
     #[asset(path = "fonts/FiraSans-Bold.ttf")]
     pub fira_sans: Handle<Font>,
+}
+
+fn startup(
+    mut spriteCenter: ResMut<SpriteCenter>,
+    asset_server: Res<AssetServer>,
+    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+) {
+    let texture_handle = asset_server.load("sprite/snake_sheet.png");
+    let sprite_atlas = TextureAtlas::from_grid_with_padding(
+        texture_handle.clone(),
+        Vec2::new(32.0, 32.0),
+        8,
+        5,
+        Vec2::new(0.0, 0.0),
+    );
+
+    let sprite_handle = texture_atlases.add(sprite_atlas);
+    spriteCenter.0.insert("snake".to_string(), sprite_handle);
 }

@@ -103,6 +103,7 @@ cargo run --features bevy/trace_chrome
 1.相机解锁 f3 DebugStatus.camera_debug
 2.fps显示 f11 DebugStatus.fps_show
 3.碰撞体积显示 f12   DebugStatus.collision_debug
+4.放置怪物  f10  DebugStatus.instance_debug
 
 
 

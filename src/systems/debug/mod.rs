@@ -1,11 +1,13 @@
 use crate::systems::debug::fps::FpsText;
 use bevy::{diagnostic::FrameTimeDiagnosticsPlugin, prelude::*};
 
-use self::egui::DebugTable;
+use self::{egui::DebugTable, origin::exclusive_system_debug};
 
 pub mod collision;
 pub mod egui;
 pub mod fps;
+pub mod instance;
+mod origin;
 
 pub struct DebugPlugin;
 pub struct DebugStatus {
@@ -13,6 +15,7 @@ pub struct DebugStatus {
     pub camera_debug: bool,
     pub collision_debug: bool,
     pub debug_info: bool,
+    pub instance_debug: bool,
 }
 impl FromWorld for DebugStatus {
     fn from_world(world: &mut World) -> Self {
@@ -21,6 +24,7 @@ impl FromWorld for DebugStatus {
             camera_debug: false,
             collision_debug: false,
             debug_info: false,
+            instance_debug: false,
         }
     }
 }
@@ -37,7 +41,10 @@ impl Plugin for DebugPlugin {
             app.add_plugin(FrameTimeDiagnosticsPlugin::default())
                 .add_plugin(egui::EGuiPlugin)
                 .add_plugin(fps::FpsPlugin)
-                .add_plugin(collision::CollisionDebugPlugin);
+                .add_plugin(collision::CollisionDebugPlugin)
+                .add_plugin(instance::InstanceDebugPlugin);
+            app.add_stage_before(CoreStage::Update, "origin_debug", SystemStage::parallel())
+                .add_system_to_stage("origin_debug", exclusive_system_debug.exclusive_system());
         }
     }
 }
@@ -69,5 +76,9 @@ fn debug_switch(
 
     if (input.just_pressed(KeyCode::F12)) {
         debugStatus.collision_debug = !debugStatus.collision_debug;
+    }
+
+    if (input.just_pressed(KeyCode::F10)) {
+        debugStatus.instance_debug = !debugStatus.instance_debug;
     }
 }

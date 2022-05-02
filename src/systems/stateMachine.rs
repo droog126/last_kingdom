@@ -1,7 +1,7 @@
 use bevy::core::FixedTimestep;
 use bevy::prelude::*;
 
-use crate::state::loading::{SpriteCenter};
+use crate::state::loading::SpriteCenter;
 
 #[derive(Component, Copy, Clone, Eq, PartialEq, Debug, Hash, Reflect)]
 #[reflect(Component)]
@@ -24,12 +24,14 @@ pub struct StateInfo {
     pub spriteName: String,
 }
 
-#[derive(Component, Debug, Clone)]
+#[derive(Component, Clone)]
 
-pub struct InsState(pub StateMachine);
+pub struct InsState(pub StateMachine, pub fn(&InsState) -> StateInfo);
 
-pub trait Info {
-    fn _get(&self) -> StateInfo;
+impl InsState {
+    fn get(&self) -> StateInfo {
+        (self.1)(self)
+    }
 }
 
 pub struct StateChangeEvt {
@@ -69,7 +71,7 @@ fn state_trigger(
                     spriteName,
                     startIndex,
                     endIndex,
-                } = insState._get();
+                } = insState.get();
 
                 let newSpriteHandle = spriteCenter.0.get(&spriteName).unwrap();
 
@@ -93,7 +95,7 @@ fn sprite_update(mut query: Query<(&mut InsState, &mut TextureAtlasSprite)>) {
             startIndex,
             endIndex,
             spriteName,
-        } = insState._get();
+        } = insState.get();
 
         if (sprite.index >= endIndex) {
             sprite.index = startIndex;

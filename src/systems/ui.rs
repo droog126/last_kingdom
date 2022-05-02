@@ -10,6 +10,8 @@ impl Plugin for UiPlugin {
     }
 }
 
-fn startup(mut egui_ctx: ResMut<EguiContext>) {}
+fn startup(mut egui_ctx: ResMut<EguiContext>, mut commands: Commands) {
+    commands.spawn_bundle(UiCameraBundle::default());
+}
 
 fn step(mut commands: Commands, mut egui_ctx: ResMut<EguiContext>) {}

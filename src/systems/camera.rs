@@ -7,9 +7,10 @@ use super::{debug::DebugStatus, input::InsInput};
 #[derive(Component)]
 pub struct MainCameraTag;
 
+#[derive(Debug)]
 pub struct CursorPosition {
-    x: f32,
-    y: f32,
+    pub x: f32,
+    pub y: f32,
 }
 
 pub struct DiffQueue(MyQueue);

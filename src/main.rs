@@ -23,11 +23,6 @@ fn main() {
             ..Default::default()
         })
         .add_plugins(DefaultPlugins)
-        .add_startup_system(startup)
         .add_plugin(GamePlugin);
     app.run();
-}
-
-fn startup(mut commands: Commands) {
-    commands.spawn_bundle(UiCameraBundle::default());
 }
