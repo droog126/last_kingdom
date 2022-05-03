@@ -79,3 +79,30 @@ pub fn createStaCollision(
 
     return (collisionChildId);
 }
+
+pub fn create_scope_collision(
+    commands: &mut Commands,
+    x: f32,
+    y: f32,
+    width: f32,
+    height: f32,
+) -> Entity {
+    let collisionId = commands
+        .spawn()
+        .insert(CollisionDynTag)
+        .insert(CollisionConfig {
+            width: width as i32,
+            height: height as i32,
+        })
+        .insert(Transform {
+            translation: Vec3::new(x, y, 100.0 - y / 10000.0),
+            ..default()
+        })
+        .insert(CollisionBot {
+            pos: Vec2::new(0.0, 0.0),
+            force: Vec2::new(0.0, 0.0),
+            wall_move: [None; 2],
+        })
+        .id();
+    return collisionId;
+}

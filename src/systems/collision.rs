@@ -149,8 +149,7 @@ fn step(
 
     let mut tree = broccoli::tree::new_par(&mut aabbs);
 
-    // 动静碰撞  把碰撞的那边坐标传过去
-    let mut hello = AabbPin::new(staVec.as_mut_slice());
+    // 实体和墙碰撞  把碰撞的那边坐标传过去
     for i in AabbPin::new(staVec.as_mut_slice()).iter_mut() {
         tree.for_all_intersect_rect_mut(i, |r, mut a| {
             let (rect, bot) = a.destruct_mut();
@@ -167,11 +166,15 @@ fn step(
         })
     }
 
-    // 动动碰撞  根据pos 计算出force
+    // 范围和实体
+
+    // 实体和实体  根据pos 计算出force
     tree.colliding_pairs_builder(|a, b| {
         let a = a.unpack_inner();
         let b = b.unpack_inner();
         let _ = repel([(a.pos, &mut a.force), (b.pos, &mut b.force)], 0.001, 1.);
+
+        println!("hello");
     })
     .build_par();
 }

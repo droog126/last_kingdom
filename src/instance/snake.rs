@@ -8,6 +8,8 @@ use bevy_prototype_lyon::prelude::*;
 
 use bevy::prelude::*;
 
+use super::utils::create_scope_collision;
+
 #[derive(Component)]
 pub struct SnakeTag;
 
@@ -73,11 +75,14 @@ pub fn snake_create_raw(
         .insert(SnakeTag)
         .id();
 
+    // 范围实体
+    let scopeCollisionId = create_scope_collision(&mut commands, 0.0, 0.0, 100.0, 100.0);
+
     let shape = shapes::Rectangle {
         extents: Vec2::new(20.0, 10.0),
         origin: RectangleOrigin::Center,
     };
-    let collisionId = commands
+    let instanceCollisionId = commands
         .spawn_bundle(GeometryBuilder::build_as(
             &shape,
             DrawMode::Outlined {
@@ -99,11 +104,13 @@ pub fn snake_create_raw(
         .insert(InstanceCollisionTag)
         .insert(Name::new("snakeCollision"))
         .insert(Visibility { is_visible: false })
-        .push_children(&[instanceId, shadowId])
+        .push_children(&[instanceId, shadowId, scopeCollisionId])
         .id();
 
     // player后置添加
-    commands.entity(instanceId).insert(CollisionID(collisionId));
+    commands
+        .entity(instanceId)
+        .insert(CollisionID(instanceCollisionId));
 }
 
 pub fn snake_step(
