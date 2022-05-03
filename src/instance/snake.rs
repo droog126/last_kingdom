@@ -2,6 +2,7 @@ use crate::state::loading::SpriteCenter;
 use crate::systems::collision::{CollisionBot, CollisionConfig, CollisionDynTag, CollisionID};
 use crate::systems::debug::DebugStatus;
 use crate::systems::instance::shadow::ShadowAsset;
+use crate::systems::instance::InstanceCollisionTag;
 use crate::systems::stateMachine::{InsState, StateChangeEvt, StateInfo, StateMachine};
 use bevy_prototype_lyon::prelude::*;
 
@@ -14,6 +15,8 @@ pub struct SnakeTag;
 pub struct SnakeProps {
     pub spd: f32,
 }
+#[derive(Component)]
+pub struct SnakeCollisionTag;
 
 fn getSnakeSprite(insState: &InsState) -> StateInfo {
     match (insState.0) {
@@ -81,7 +84,7 @@ pub fn snake_create_raw(
                 fill_mode: FillMode::color(Color::CYAN),
                 outline_mode: StrokeMode::new(Color::BLACK, 1.0),
             },
-            Transform::from_translation(Vec3::new(x, y, 1.0)),
+            Transform::from_translation(Vec3::new(x, y, 100.0 - y / 10000.0)),
         ))
         .insert(CollisionDynTag)
         .insert(CollisionBot {
@@ -93,6 +96,7 @@ pub fn snake_create_raw(
             width: 20,
             height: 10,
         })
+        .insert(InstanceCollisionTag)
         .insert(Name::new("snakeCollision"))
         .insert(Visibility { is_visible: false })
         .push_children(&[instanceId, shadowId])
@@ -106,5 +110,6 @@ pub fn snake_step(
     time: Res<Time>,
     mut changeStateSend: EventWriter<StateChangeEvt>,
     debugStatus: Res<DebugStatus>,
+    mut query: Query<&mut Transform, With<SnakeCollisionTag>>,
 ) {
 }

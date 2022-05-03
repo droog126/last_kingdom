@@ -6,21 +6,9 @@ use bevy::prelude::*;
 pub struct PlayingPlugin;
 impl Plugin for PlayingPlugin {
     fn build(&self, app: &mut bevy::prelude::App) {
-        app.add_system_set(
-            SystemSet::on_enter(GameState::Playing)
-                .with_system(playing_enter)
-                .with_system(player_create),
-        )
-        .add_system_set(
-            SystemSet::on_update(GameState::Playing)
-                .with_system(playing_setup)
-                .with_system(player_step),
-        )
-        .add_system_set(SystemSet::on_exit(GameState::Playing).with_system(playing_exit));
-    }
-
-    fn name(&self) -> &str {
-        std::any::type_name::<Self>()
+        app.add_system_set(SystemSet::on_enter(GameState::Playing).with_system(playing_enter))
+            .add_system_set(SystemSet::on_update(GameState::Playing).with_system(playing_setup))
+            .add_system_set(SystemSet::on_exit(GameState::Playing).with_system(playing_exit));
     }
 }
 

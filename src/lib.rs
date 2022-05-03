@@ -34,9 +34,9 @@ impl Plugin for GamePlugin {
             .add_plugin(systems::input::InputPlugin)
             .add_plugin(systems::stateMachine::StateMachinePlugin)
             .add_plugin(systems::camera::CameraPlugin)
+            .add_plugin(systems::instance::InstancePlugin)
             // .add_plugin(systems::title::TitlePlugin)
             .add_plugin(systems::collision::CollisionPlugin)
-            .add_plugin(systems::instance::shadow::ShadowPlugin)
             .add_plugin(systems::ui::UiPlugin)
             .add_plugin(systems::debug::DebugPlugin);
         // 总线系统

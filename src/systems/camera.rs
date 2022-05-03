@@ -95,8 +95,7 @@ fn camera_step(
                 diffQueue.0.add(diffLen);
                 let iSIncreased = diffQueue.0.iSIncreased();
 
-                if !iSIncreased && diffLen <= 0.8 {
-                    camera_transform.translation = unwrapPlayerPosition;
+                if diffLen <= 20.0 {
                 } else {
                     camera_transform.translation -= diff * factor;
                 }

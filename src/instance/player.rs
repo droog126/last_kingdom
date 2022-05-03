@@ -3,6 +3,7 @@ use crate::systems::collision::{CollisionBot, CollisionConfig, CollisionDynTag, 
 use crate::systems::debug::DebugStatus;
 use crate::systems::input::InsInput;
 use crate::systems::instance::shadow::ShadowAsset;
+use crate::systems::instance::InstanceCollisionTag;
 use crate::systems::stateMachine::{InsState, StateChangeEvt, StateInfo, StateMachine};
 use bevy_prototype_lyon::prelude::*;
 
@@ -126,6 +127,7 @@ pub fn player_create(
                 height: 10,
             })
             .insert(PlayerCollisionDynTag)
+            .insert(InstanceCollisionTag)
             .insert(Name::new("playerCollision"))
             .insert(Visibility { is_visible: false })
             .push_children(&[instanceId, shadowId])

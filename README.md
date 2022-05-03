@@ -54,6 +54,9 @@ https://github.com/mvlabat/bevy_egui.git
 
 
 8.2 ai
+1. 随机移动
+2. 看到玩家进行攻击
+3. 血量过低，逃跑
 
 
 
