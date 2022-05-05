@@ -4,11 +4,13 @@ use crate::systems::debug::DebugStatus;
 use crate::systems::instance::shadow::ShadowAsset;
 use crate::systems::instance::InstanceCollisionTag;
 use crate::systems::stateMachine::{InsState, StateChangeEvt, StateInfo, StateMachine};
+use bevy::utils::HashMap;
 use bevy_prototype_lyon::prelude::*;
 
 use bevy::prelude::*;
 
 use super::utils::{create_instance_collision, create_scope_collision};
+use super::{InstanceCamp, InstanceCategory, InstanceType};
 
 #[derive(Component)]
 pub struct SnakeTag;
@@ -19,6 +21,9 @@ pub struct SnakeProps {
 }
 #[derive(Component)]
 pub struct SnakeCollisionTag;
+
+#[derive(Component, Debug)]
+pub struct SnakeScopeCollisionTag;
 
 pub struct SnakeAi {
     target: Option<Entity>,
@@ -91,7 +96,14 @@ pub fn snake_create_raw(
         .entity(collisionId)
         .insert(Name::new("snakeCollision"))
         .insert(SnakeCollisionTag)
+        .insert(InstanceCategory {
+            type_: InstanceType::Snake,
+            camp: InstanceCamp::Hostile,
+        })
         .push_children(&[instanceId, shadowId, scopeCollisionId]);
+    commands
+        .entity(scopeCollisionId)
+        .insert(SnakeScopeCollisionTag);
 }
 
 // 运行限制条件，snake确实存在  可能需要一张表来维护
@@ -100,13 +112,63 @@ pub fn snake_step(
     mut changeStateSend: EventWriter<StateChangeEvt>,
     debugStatus: Res<DebugStatus>,
     mut set: ParamSet<(
-        Query<(&mut Transform, &Children), With<SnakeCollisionTag>>,
-        Query<(&Transform, With<CollisionBot>)>,
+        Query<&mut CollisionBot, With<SnakeScopeCollisionTag>>,
+        Query<(&Transform, &InstanceCategory), With<InstanceCollisionTag>>,
+        Query<(&mut Transform), With<SnakeCollisionTag>>,
     )>,
 ) {
     let mut query = set.p0();
-    for (mut transform, children) in query.iter_mut() {
-        // println!("children: {:?}", children);
+    let mut snakeScopeOtherMap = HashMap::new();
+    let mut snakeOtherInfoMap = HashMap::new();
+
+    for mut collisionBot in query.iter_mut() {
+        match &mut collisionBot.collisionInner {
+            crate::systems::collision::CollisionInner::Scope { other, parentId } => {
+                snakeScopeOtherMap.insert(parentId.clone(), other.clone());
+                other.clear();
+            }
+            _ => {}
+        }
+    }
+
+    // 这里是不是可以过滤一下?
+    let mut query = set.p1();
+    for (entity, OtherEntities) in snakeScopeOtherMap {
+        let mut otherInfos = vec![];
+        for (otherEntity) in OtherEntities {
+            if let Ok((transform, instanceCategory)) = query.get(otherEntity) {
+                // otherInfo.push((*transform, instanceCategory.clone()));
+                match instanceCategory.camp {
+                    InstanceCamp::Neutral => {
+                        otherInfos.push((*transform, instanceCategory.clone()));
+                    }
+                    InstanceCamp::Hostile => {}
+                    InstanceCamp::Friendly => {
+                        otherInfos.push((*transform, instanceCategory.clone()));
+                    }
+                    InstanceCamp::Team { team_id } => {
+                        otherInfos.push((*transform, instanceCategory.clone()));
+                    }
+                }
+            }
+        }
+        // snakeOtherInfoMap.insert(entity, otherInfo);
+        // 这里我只想第一个
+        snakeOtherInfoMap.insert(entity, otherInfos);
+    }
+
+    // instanceId : [otherInfo,otherInfo,otherInfo]
+    let mut query = set.p2();
+    for (entity, otherInfos) in snakeOtherInfoMap {
+        let len = otherInfos.len();
+        if len >= 1 {
+            let (targetTransform, _) = &otherInfos[0];
+            if let Ok(mut instanceTransform) = query.get_mut(entity) {
+                let mut diff = targetTransform.translation - instanceTransform.translation;
+                diff = diff.normalize();
+                instanceTransform.translation += diff * time.delta_seconds() * 100.0;
+            }
+        }
     }
 }
 

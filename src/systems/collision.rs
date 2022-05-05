@@ -26,6 +26,7 @@ pub struct CollisionID(pub Entity);
 pub enum CollisionInner {
     Static,
     Scope {
+        parentId: Entity,
         other: Vec<Entity>,
     },
     Instance {
@@ -68,17 +69,17 @@ pub fn collision_step(
         let mut configWidth = collisionBot.width;
         let mut configHeight = collisionBot.height;
         let mut rect = Rect::new(
-            transform.translation.x - configWidth / 2.,
-            transform.translation.x + configWidth / 2.,
-            transform.translation.y - configHeight / 2.,
-            transform.translation.y + configHeight / 2.,
+            globalTransform.translation.x - configWidth / 2.,
+            globalTransform.translation.x + configWidth / 2.,
+            globalTransform.translation.y - configHeight / 2.,
+            globalTransform.translation.y + configHeight / 2.,
         );
         let collisionInner = &mut collisionBot.collisionInner;
         match collisionInner {
             CollisionInner::Static => {
                 staBots.push(rect);
             }
-            CollisionInner::Scope { other } => dynBots.push(bbox(rect, collisionBot)),
+            CollisionInner::Scope { other, parentId } => dynBots.push(bbox(rect, collisionBot)),
             CollisionInner::Instance {
                 pos,
                 force,
@@ -171,15 +172,16 @@ pub fn collision_step(
             ) => {
                 repel([(pos, force), (b_pos, b_force)], 0.001, 1.);
             }
-            (CollisionInner::Scope { other }, CollisionInner::Scope { other: b_other }) => todo!(),
+            // (CollisionInner::Scope { other }, CollisionInner::Scope { other: b_other }) => todo!(),
             (
-                CollisionInner::Scope { other },
+                CollisionInner::Scope { other, parentId },
                 CollisionInner::Instance {
                     pos,
                     force,
                     wall_move,
                 },
             ) => {
+                // println!("id:{:?}", b.id);
                 other.push(b.id);
             }
             (
@@ -188,8 +190,11 @@ pub fn collision_step(
                     force,
                     wall_move,
                 },
-                CollisionInner::Scope { other },
-            ) => other.push(a.id),
+                CollisionInner::Scope { other, parentId },
+            ) => {
+                other.push(a.id);
+                // println!("id:{:?}", a.id);
+            }
             _ => {}
         }
     })

@@ -1,4 +1,5 @@
 use crate::systems::collision::{CollisionBot, CollisionInner};
+use crate::systems::instance::InstanceCollisionTag;
 use crate::utils::num::y_to_z;
 use bevy::math::Vec2;
 use bevy::prelude::*;
@@ -23,6 +24,7 @@ pub fn create_instance_collision(
         })
         .insert(Name::new("collision"))
         .insert(Visibility { is_visible: false })
+        .insert(InstanceCollisionTag)
         .id();
 
     commands.entity(collisionId).insert(CollisionBot {
@@ -86,7 +88,10 @@ pub fn create_scope_collision(
         .id();
 
     commands.entity(collisionId).insert(CollisionBot {
-        collisionInner: CollisionInner::Scope { other: vec![] },
+        collisionInner: CollisionInner::Scope {
+            other: vec![],
+            parentId: parentId,
+        },
         width: width,
         height: height,
         id: collisionId,

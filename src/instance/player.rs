@@ -1,4 +1,5 @@
 use crate::instance::utils::create_instance_collision;
+use crate::instance::{InstanceCamp, InstanceCategory, InstanceType};
 use crate::state::loading::SpriteCenter;
 use crate::systems::collision::{CollisionBot, CollisionID};
 use crate::systems::debug::DebugStatus;
@@ -119,7 +120,10 @@ pub fn player_create(
             .entity(collisionId)
             .insert(Name::new("playerCollision"))
             .insert(PlayerCollisionDynTag)
-            .insert(InstanceCollisionTag)
+            .insert(InstanceCategory {
+                type_: InstanceType::Player,
+                camp: InstanceCamp::Neutral,
+            })
             .push_children(&[instanceId, shadowId]);
 
         commands.insert_resource(GLobalPlayerID(instanceId));
