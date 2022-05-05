@@ -56,6 +56,7 @@ fn startup(mut commands: Commands) {}
 
 // 需要在接受输入同步新位置后调用
 // query拿出来的值需要回收的，你不能把他的子属性取出来，因为他也不知道你什么时候回收.
+// 整体移入是所有权的转移  子属性移入可以是copy 或者 就是不能
 pub fn collision_step(
     mut query: Query<(&GlobalTransform, &mut Transform, &mut CollisionBot)>,
     mut debugTable: ResMut<DebugTable>,
@@ -170,6 +171,25 @@ pub fn collision_step(
             ) => {
                 repel([(pos, force), (b_pos, b_force)], 0.001, 1.);
             }
+            (CollisionInner::Scope { other }, CollisionInner::Scope { other: b_other }) => todo!(),
+            (
+                CollisionInner::Scope { other },
+                CollisionInner::Instance {
+                    pos,
+                    force,
+                    wall_move,
+                },
+            ) => {
+                other.push(b.id);
+            }
+            (
+                CollisionInner::Instance {
+                    pos,
+                    force,
+                    wall_move,
+                },
+                CollisionInner::Scope { other },
+            ) => other.push(a.id),
             _ => {}
         }
     })
@@ -177,9 +197,10 @@ pub fn collision_step(
 }
 
 pub fn repel(bots: [(&mut Vec2, &mut Vec2); 2], closest: f32, mag: f32) -> Result<(), ErrTooClose> {
+    // println!("{:?}", bots);
     let [(bot1_pos, bot1_force_buffer), (bot2_pos, bot2_force_buffer)] = bots;
 
-    let diff = Vec2::new(bot2_pos.x - bot1_pos.x, bot2_pos.y - bot2_pos.y);
+    let diff = Vec2::new(bot2_pos.x - bot1_pos.x, bot2_pos.y - bot1_pos.y);
 
     let len_sqr = diff.length();
 

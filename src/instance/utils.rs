@@ -22,7 +22,7 @@ pub fn create_instance_collision(
             ..default()
         })
         .insert(Name::new("collision"))
-        // .insert(Visibility { is_visible: false })
+        .insert(Visibility { is_visible: false })
         .id();
 
     commands.entity(collisionId).insert(CollisionBot {

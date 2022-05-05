@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 
 use crate::{
+    instance::snake::snake_create_raw,
     // instance::snake::snake_create_raw,
     state::loading::SpriteCenter,
     systems::{camera::CursorPosition, instance::shadow::ShadowAsset},
@@ -29,12 +30,12 @@ fn step(
     if (mouseInput.just_pressed(MouseButton::Left)) {
         println!("create snake{:?}", cursorPosition);
 
-        // snake_create_raw(
-        //     &mut commands,
-        //     spriteCenter,
-        //     shadowHandle,
-        //     cursorPosition.x,
-        //     cursorPosition.y,
-        // );
+        snake_create_raw(
+            &mut commands,
+            spriteCenter,
+            shadowHandle,
+            cursorPosition.x,
+            cursorPosition.y,
+        );
     }
 }

@@ -110,21 +110,6 @@ pub fn player_create(
         };
 
         let collisionId = create_instance_collision(&mut commands, 0.0, 0.0, 20.0, 10.0);
-        // let collisionId = commands.
-        //     // .spawn_bundle(GeometryBuilder::build_as(
-        //     //     &shape,
-        //     //     DrawMode::Outlined {
-        //     //         fill_mode: FillMode::color(Color::CYAN),
-        //     //         outline_mode: StrokeMode::new(Color::BLACK, 1.0),
-        //     //     },
-        //     //     Transform::from_translation(Vec3::new(0., 0.0, 1.0)),
-        //     // ))
-        //     .insert(CollisionConfig {
-        //         width: 20,
-        //         height: 10,
-        //     })
-        //     .insert(Visibility { is_visible: false })
-        //     .id();
 
         // player后置添加
         commands.entity(instanceId).insert(CollisionID(collisionId));
