@@ -6,7 +6,9 @@ pub fn bool_to_f32(x: bool) -> f32 {
     }
 }
 
-// pub fn isDequeueIncreased(queue: VecDeque) -> bool {
+pub fn y_to_z(y: f32) -> f32 {
+    100.0 - y / 10000.0
+}
 
 use std::collections::VecDeque;
 

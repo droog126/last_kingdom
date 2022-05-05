@@ -58,6 +58,7 @@ https://github.com/mvlabat/bevy_egui.git
 2. 看到玩家进行攻击(doing)
 侦察范围碰撞还是需要去升级碰撞系统
 粗模型+细模型
+能通过加字段解决的问题都不是问题
 
 
 

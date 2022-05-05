@@ -1,5 +1,7 @@
 use crate::state::loading::SpriteCenter;
-use crate::systems::collision::{CollisionBot, CollisionConfig, CollisionDynTag, CollisionID};
+use crate::systems::collision::{
+    CollisionBot, CollisionConfig, CollisionDynTag, CollisionID, CollisionScopeEvent, CollisionType,
+};
 use crate::systems::debug::DebugStatus;
 use crate::systems::instance::shadow::ShadowAsset;
 use crate::systems::instance::InstanceCollisionTag;
@@ -75,8 +77,9 @@ pub fn snake_create_raw(
         .insert(SnakeTag)
         .id();
 
-    // 范围实体
-    let scopeCollisionId = create_scope_collision(&mut commands, 0.0, 0.0, 100.0, 100.0);
+    // 范围实体 他的id是什么呢？应该是collisionId
+    let scopeCollisionId =
+        create_scope_collision(&mut commands, 0.0, 0.0, 100.0, 100.0, instanceCollisionId);
 
     let shape = shapes::Rectangle {
         extents: Vec2::new(20.0, 10.0),
@@ -92,11 +95,6 @@ pub fn snake_create_raw(
             Transform::from_translation(Vec3::new(x, y, 100.0 - y / 10000.0)),
         ))
         .insert(CollisionDynTag)
-        .insert(CollisionBot {
-            pos: Vec2::new(0.0, 0.0),
-            force: Vec2::new(0.0, 0.0),
-            wall_move: [None; 2],
-        })
         .insert(CollisionConfig {
             width: 20,
             height: 10,
@@ -111,12 +109,57 @@ pub fn snake_create_raw(
     commands
         .entity(instanceId)
         .insert(CollisionID(instanceCollisionId));
+
+    // collision后置添加
+    commands.entity(instanceCollisionId).insert(CollisionBot {
+        pos: Vec2::new(0.0, 0.0),
+        force: Vec2::new(0.0, 0.0),
+        wall_move: [None; 2],
+        collisionType: CollisionType::Instance,
+        id: instanceCollisionId,
+        other: vec![],
+    });
+    commands.entity(scopeCollisionId).insert(CollisionBot {
+        pos: Vec2::new(0.0, 0.0),
+        force: Vec2::new(0.0, 0.0),
+        wall_move: [None; 2],
+        collisionType: CollisionType::Scope,
+        id: instanceCollisionId,
+        other: vec![],
+    });
 }
 
 pub fn snake_step(
     time: Res<Time>,
     mut changeStateSend: EventWriter<StateChangeEvt>,
     debugStatus: Res<DebugStatus>,
-    mut query: Query<&mut Transform, With<SnakeCollisionTag>>,
+    mut query: Query<(&mut Transform, &CollisionBot), With<SnakeCollisionTag>>,
 ) {
 }
+
+pub fn snake_collisionScope_event(mut query: Query<(&mut CollisionBot, &Transform)>) {
+    let mut events = vec![];
+    for (mut collisionBot, transform) in query.iter_mut() {
+        let len = collisionBot.other.len();
+        if len != 0 {
+            events.push(collisionBot.other.clone());
+            println!("scopeOther:{:?}", collisionBot.other);
+            collisionBot.other.clear();
+        }
+    }
+
+    for event in events {
+        for targetId in event {
+            // other事件的一个东西
+            let mut target = query.get(targetId).unwrap();
+            println!(
+                "发现情况 {:?} {:?}  other:{:?} other: {:?}",
+                target.1.translation, targetId, target.0.id, target.0.other
+            );
+            // 判断是否是自己
+            // 判断是否是别人
+        }
+    }
+}
+
+// ai设计动作去处理
