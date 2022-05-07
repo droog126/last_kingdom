@@ -1,4 +1,7 @@
-use rand::{thread_rng, Rng};
+use std::ops::Add;
+
+use bevy::math::Vec2;
+use rand::{distributions::uniform::SampleUniform, thread_rng, Rng};
 
 pub fn random_arr2(x: u32, y: u32) -> impl Iterator<Item = [f32; 2]> + Clone {
     std::iter::repeat_with(move || {
@@ -23,4 +26,23 @@ pub fn random_arr4(
         let randHeight = rng.gen_range(0..height);
         [randx, randy, randWidth, randHeight]
     })
+}
+
+// num=1 表示一秒有一次机会
+pub fn random_in_unlimited(num: f32, delta: f32) -> bool {
+    let mut rng = thread_rng();
+    let fps = 1.0 / delta;
+    rng.gen_range(0.0..fps) < num
+}
+
+pub fn random_range<T: SampleUniform + Add + std::cmp::PartialOrd>(min: T, max: T) -> T {
+    let mut rng = thread_rng();
+    rng.gen_range(min..max)
+}
+
+pub fn random_Vec2() -> Vec2 {
+    let mut rng = thread_rng();
+    let mut randx = rng.gen_range(-1.0..1.0);
+    let mut randy = rng.gen_range(-1.0..1.0);
+    Vec2::new(randx, randy).normalize()
 }

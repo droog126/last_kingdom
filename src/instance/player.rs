@@ -100,7 +100,7 @@ pub fn player_create(
             .insert(InsInput {
                 ..Default::default()
             })
-            .insert(InsState(StateMachine::Idle, getPlayerSprite))
+            .insert(InsState(StateMachine::Idle, 1.0, getPlayerSprite))
             .insert(Name::new("player".to_string()))
             .insert(PlayerTag)
             .id();
@@ -133,20 +133,11 @@ pub fn player_create(
 pub fn player_step(
     time: Res<Time>,
     mut set: ParamSet<(
-        Query<
-            (
-                Entity,
-                &mut Transform,
-                &PlayerProps,
-                &InsInput,
-                &mut InsState,
-            ),
-            With<PlayerTag>,
-        >,
+        Query<(Entity, &mut Transform, &PlayerProps, &InsInput), With<PlayerTag>>,
         Query<(&mut Transform), With<PlayerCollisionDynTag>>,
     )>,
 
-    mut changeStateSend: EventWriter<StateChangeEvt>,
+    mut changeStateEvent: EventWriter<StateChangeEvt>,
     debugStatus: Res<DebugStatus>,
 ) {
     // 有输入=>移动逻辑
@@ -157,15 +148,15 @@ pub fn player_step(
 
     let mut nextLen = Vec2::splat(0.0);
 
-    for (entity, mut trans, props, input, mut insState) in playerQuery.iter_mut() {
+    for (entity, mut trans, props, input) in playerQuery.iter_mut() {
         if input.dir.length() == 0.0 {
-            changeStateSend.send(StateChangeEvt {
+            changeStateEvent.send(StateChangeEvt {
                 ins: entity,
                 newState: StateMachine::Idle,
                 xDir: input.dir.x,
             });
         } else {
-            changeStateSend.send(StateChangeEvt {
+            changeStateEvent.send(StateChangeEvt {
                 ins: entity,
                 newState: StateMachine::Walk,
                 xDir: input.dir.x,

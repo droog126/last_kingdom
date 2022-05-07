@@ -1,5 +1,6 @@
 use bevy::core::FixedTimestep;
 use bevy::prelude::*;
+use bevy::utils::hashbrown::HashMap;
 
 use crate::state::loading::SpriteCenter;
 
@@ -17,6 +18,9 @@ impl Default for StateMachine {
 
 // 和struct相关的函数闭包需求就挂在这个struct的trait上
 
+#[derive(Component)]
+pub struct AnimationInstanceId(pub Entity);
+
 #[derive(Debug)]
 pub struct StateInfo {
     pub startIndex: usize,
@@ -26,11 +30,11 @@ pub struct StateInfo {
 
 #[derive(Component, Clone)]
 
-pub struct InsState(pub StateMachine, pub fn(&InsState) -> StateInfo);
+pub struct InsState(pub StateMachine, pub f32, pub fn(&InsState) -> StateInfo);
 
 impl InsState {
     fn get(&self) -> StateInfo {
-        (self.1)(self)
+        (self.2)(self)
     }
 }
 
@@ -40,9 +44,17 @@ pub struct StateChangeEvt {
     pub xDir: f32,
 }
 
+pub struct NextActMap(pub HashMap<Entity, NextActMapValue>);
+pub struct NextActMapValue {
+    pub nextState: StateMachine,
+    pub nextXScale: f32,
+}
+
 pub struct StateMachinePlugin;
 impl Plugin for StateMachinePlugin {
     fn build(&self, app: &mut App) {
+        app.insert_resource(NextActMap(HashMap::new()));
+
         app.add_event::<StateChangeEvt>()
             .add_system(state_trigger.label("stateUpdate"))
             .add_system_set(
@@ -50,19 +62,37 @@ impl Plugin for StateMachinePlugin {
                     .with_run_criteria(FixedTimestep::step(0.1))
                     .with_system(sprite_update),
             );
+        // .add_system(step);
     }
 }
+
+// fn step(mut actMap: ResMut<NextActMap>, mut query: Query<(&Parent, &mut InsState)>) {
+//     let mut actMapRaw = &mut actMap.0;
+//     for (parent, insState) in query.iter() {
+//         actMapRaw.insert(
+//             parent.0,
+//             NextActMapValue {
+//                 nextState: insState.0,
+//                 nextXScale: insState.1,
+//             },
+//         );
+//     }
+// }
+
 fn state_trigger(
     mut stateChangeRead: EventReader<StateChangeEvt>,
     mut query: Query<(
         &mut InsState,
         &mut TextureAtlasSprite,
         &mut Handle<TextureAtlas>,
+        &mut Transform,
     )>,
     mut spriteCenter: ResMut<SpriteCenter>,
 ) {
     for ev in stateChangeRead.iter() {
-        if let Ok((mut insState, mut sprite, mut sprite_handle)) = query.get_mut(ev.ins) {
+        if let Ok((mut insState, mut sprite, mut sprite_handle, mut transform)) =
+            query.get_mut(ev.ins)
+        {
             if (insState.0 != ev.newState) {
                 insState.0 = ev.newState;
                 sprite.index = 0;
@@ -81,9 +111,11 @@ fn state_trigger(
 
             if (ev.xDir > 0.0) {
                 sprite.flip_x = false;
+                transform.translation.x = transform.translation.x.abs();
             }
             if (ev.xDir < 0.0) {
                 sprite.flip_x = true;
+                transform.translation.x = -transform.translation.x.abs();
             }
         }
     }

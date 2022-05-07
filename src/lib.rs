@@ -38,7 +38,9 @@ impl Plugin for GamePlugin {
             // .add_plugin(systems::title::TitlePlugin)
             .add_plugin(systems::collision::CollisionPlugin)
             .add_plugin(systems::ui::UiPlugin)
+            .add_plugin(systems::timeLine::TimeLinePlugin)
             .add_plugin(systems::debug::DebugPlugin);
+
         // 总线系统
     }
 

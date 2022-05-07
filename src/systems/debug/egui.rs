@@ -9,6 +9,7 @@ use bevy_egui::{egui, EguiContext};
 pub struct DebugTable {
     pub fps: Option<f64>,
     pub collisionCount: Option<usize>,
+    pub timeLine: Option<i32>,
 }
 
 pub struct EGuiPlugin;
@@ -30,5 +31,6 @@ fn debug_table_step(mut egui_ctx: ResMut<EguiContext>, debugTable: Res<DebugTabl
             "collisionCount:{:?}",
             debugTable.collisionCount.unwrap_or(0)
         ));
+        ui.label(format!("timeLine:{:?}", debugTable.timeLine.unwrap_or(0)));
     });
 }

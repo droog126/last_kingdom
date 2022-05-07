@@ -3,9 +3,12 @@ use crate::systems::collision::{CollisionBot, CollisionID};
 use crate::systems::debug::DebugStatus;
 use crate::systems::instance::shadow::ShadowAsset;
 use crate::systems::instance::InstanceCollisionTag;
-use crate::systems::stateMachine::{InsState, StateChangeEvt, StateInfo, StateMachine};
+use crate::systems::stateMachine::{
+    AnimationInstanceId, InsState, StateChangeEvt, StateInfo, StateMachine,
+};
+use crate::systems::timeLine::TimeLine;
+use crate::utils::random::{random_Vec2, random_in_unlimited, random_range};
 use bevy::utils::HashMap;
-use bevy_prototype_lyon::prelude::*;
 
 use bevy::prelude::*;
 
@@ -25,8 +28,16 @@ pub struct SnakeCollisionTag;
 #[derive(Component, Debug)]
 pub struct SnakeScopeCollisionTag;
 
+#[derive(Component, Debug)]
 pub struct SnakeAi {
     target: Option<Entity>,
+    state: AiState,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum AiState {
+    stroll { dir: Vec2, nextTime: i32 },
+    daze,
 }
 
 fn getSnakeSprite(insState: &InsState) -> StateInfo {
@@ -79,7 +90,7 @@ pub fn snake_create_raw(
             ..Default::default()
         })
         .insert(SnakeProps { spd: 200.0 })
-        .insert(InsState(StateMachine::Idle, getSnakeSprite))
+        .insert(InsState(StateMachine::Idle, 1.0, getSnakeSprite))
         .insert(Name::new("snake".to_string()))
         .insert(SnakeTag)
         .id();
@@ -100,7 +111,13 @@ pub fn snake_create_raw(
             type_: InstanceType::Snake,
             camp: InstanceCamp::Hostile,
         })
+        .insert(SnakeAi {
+            target: None,
+            state: AiState::daze,
+        })
+        .insert(AnimationInstanceId(instanceId))
         .push_children(&[instanceId, shadowId, scopeCollisionId]);
+
     commands
         .entity(scopeCollisionId)
         .insert(SnakeScopeCollisionTag);
@@ -109,14 +126,16 @@ pub fn snake_create_raw(
 // 运行限制条件，snake确实存在  可能需要一张表来维护
 pub fn snake_step(
     time: Res<Time>,
-    mut changeStateSend: EventWriter<StateChangeEvt>,
+    mut changeStateEvent: EventWriter<StateChangeEvt>,
     debugStatus: Res<DebugStatus>,
     mut set: ParamSet<(
         Query<&mut CollisionBot, With<SnakeScopeCollisionTag>>,
         Query<(&Transform, &InstanceCategory), With<InstanceCollisionTag>>,
-        Query<(&mut Transform), With<SnakeCollisionTag>>,
+        Query<(&mut Transform, &mut SnakeAi, &AnimationInstanceId), With<SnakeCollisionTag>>,
     )>,
+    timeLine: Res<TimeLine>,
 ) {
+    let timeLineRaw = timeLine.0;
     let mut query = set.p0();
     let mut snakeScopeOtherMap = HashMap::new();
     let mut snakeOtherInfoMap = HashMap::new();
@@ -159,42 +178,63 @@ pub fn snake_step(
 
     // instanceId : [otherInfo,otherInfo,otherInfo]
     let mut query = set.p2();
+
     for (entity, otherInfos) in snakeOtherInfoMap {
-        let len = otherInfos.len();
-        if len >= 1 {
-            let (targetTransform, _) = &otherInfos[0];
-            if let Ok(mut instanceTransform) = query.get_mut(entity) {
+        if let Ok((mut instanceTransform, mut snakeAi, animationInstanceId)) = query.get_mut(entity)
+        {
+            let len = otherInfos.len();
+
+            if len >= 1 {
+                // 遇到目标
+                let (targetTransform, _) = &otherInfos[0];
                 let mut diff = targetTransform.translation - instanceTransform.translation;
                 diff = diff.normalize();
                 instanceTransform.translation += diff * time.delta_seconds() * 100.0;
+
+                let newActState = StateMachine::Walk;
+                let newActXScale = diff.x;
+                changeStateEvent.send(StateChangeEvt {
+                    ins: animationInstanceId.0,
+                    newState: newActState,
+                    xDir: newActXScale,
+                });
+            } else {
+                // 没有遇到目标
+                match snakeAi.state {
+                    AiState::stroll { dir, nextTime } => {
+                        // println!("stroll {:?} {:?}", dir, nextTime);
+                        instanceTransform.translation +=
+                            dir.extend(0.0) * time.delta_seconds() * 100.0;
+
+                        if timeLineRaw > nextTime {
+                            snakeAi.state = AiState::daze;
+                        }
+                        let newActState = StateMachine::Walk;
+                        let newActXScale = dir.x;
+                        changeStateEvent.send(StateChangeEvt {
+                            ins: animationInstanceId.0,
+                            newState: newActState,
+                            xDir: newActXScale,
+                        });
+                    }
+                    AiState::daze => {
+                        if random_in_unlimited(1.0 / 10.0, time.delta_seconds()) {
+                            snakeAi.state = AiState::stroll {
+                                dir: random_Vec2(),
+                                nextTime: timeLineRaw
+                                    + (60.0 * random_range::<f32>(0.5, 2.0)) as i32,
+                            };
+                        }
+
+                        let newActState = StateMachine::Idle;
+                        changeStateEvent.send(StateChangeEvt {
+                            ins: animationInstanceId.0,
+                            newState: newActState,
+                            xDir: 0.0,
+                        });
+                    }
+                }
             }
         }
     }
 }
-
-pub fn snake_collisionScope_event(mut query: Query<(&mut CollisionBot, &Transform)>) {
-    // let mut events = vec![];
-    // for (mut collisionBot, transform) in query.iter_mut() {
-    //     let len = collisionBot.collisionInner.other.len();
-    //     if len != 0 {
-    //         events.push(collisionBot.collisionInner.other.clone());
-    //         println!("scopeOther:{:?}", collisionBot.collisionInner.other);
-    //         collisionBot.collisionInner.other.clear();
-    //     }
-    // }
-
-    // for event in events {
-    //     for targetId in event {
-    //         // other事件的一个东西
-    //         let mut target = query.get(targetId).unwrap();
-    //         println!(
-    //             "发现情况 {:?} {:?}  other:{:?} other: {:?}",
-    //             target.1.translation, targetId, target.0.id, target.0.other
-    //         );
-    //         // 判断是否是自己
-    //         // 判断是否是别人
-    //     }
-    // }
-}
-
-// ai设计动作去处理

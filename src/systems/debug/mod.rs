@@ -53,6 +53,7 @@ fn startup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.insert_resource(DebugTable {
         fps: None,
         collisionCount: None,
+        timeLine: None,
     });
 }
 
