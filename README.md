@@ -125,3 +125,8 @@ cargo run --features bevy/trace_chrome
 
 
 
+
+# 性能现状
+1w 可以用实例
+2w 碰撞检测
+有42到47帧数左右

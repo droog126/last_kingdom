@@ -22,20 +22,28 @@ fn step(
     debugStatus: Res<DebugStatus>,
 
     mut spriteCenter: ResMut<SpriteCenter>,
-    shadowHandle: Res<ShadowAsset>,
+    mut shadowHandle: ResMut<ShadowAsset>,
 ) {
     if (!debugStatus.instance_debug) {
         return;
     }
     if (mouseInput.just_pressed(MouseButton::Left)) {
-        println!("create snake{:?}", cursorPosition);
-
         snake_create_raw(
             &mut commands,
-            spriteCenter,
-            shadowHandle,
+            &mut spriteCenter,
+            &mut shadowHandle,
             cursorPosition.x,
             cursorPosition.y,
         );
+        // println!("create snake{:?}", cursorPosition);
+        for _ in 0..10000 {
+            // snake_create_raw(
+            //     &mut commands,
+            //     &mut spriteCenter,
+            //     &mut shadowHandle,
+            //     cursorPosition.x,
+            //     cursorPosition.y,
+            // );
+        }
     }
 }

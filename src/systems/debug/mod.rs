@@ -34,13 +34,18 @@ impl Plugin for DebugPlugin {
         // 热更新
         app.add_startup_system(startup)
             .init_resource::<DebugStatus>()
+            .add_plugin(fps::FpsPlugin)
             .add_system_set(SystemSet::new().with_system(debug_switch));
+
+        #[cfg(not(debug_assertions))]
+        {
+            app.add_plugin(instance::InstanceDebugPlugin);
+        }
 
         #[cfg(debug_assertions)]
         {
             app.add_plugin(FrameTimeDiagnosticsPlugin::default())
                 .add_plugin(egui::EGuiPlugin)
-                .add_plugin(fps::FpsPlugin)
                 .add_plugin(collision::CollisionDebugPlugin)
                 .add_plugin(instance::InstanceDebugPlugin);
             app.add_stage_before(CoreStage::Update, "origin_debug", SystemStage::parallel())

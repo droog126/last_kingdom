@@ -62,8 +62,8 @@ fn getSnakeSprite(insState: &InsState) -> StateInfo {
 
 pub fn snake_create_raw(
     mut commands: &mut Commands,
-    mut spriteCenter: ResMut<SpriteCenter>,
-    shadowHandle: Res<ShadowAsset>,
+    mut spriteCenter: &mut ResMut<SpriteCenter>,
+    shadowHandle: &mut ResMut<ShadowAsset>,
     x: f32,
     y: f32,
 ) {
