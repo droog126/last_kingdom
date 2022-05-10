@@ -149,7 +149,6 @@ pub fn snake_step(
             _ => {}
         }
     }
-
     // 这里是不是可以过滤一下?
     let mut query = set.p1();
     for (entity, OtherEntities) in snakeScopeOtherMap {

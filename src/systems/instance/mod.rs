@@ -24,7 +24,8 @@ impl Plugin for InstancePlugin {
                     .with_system(player_step.before(collision_step))
                     .with_system(snake_step.before(collision_step))
                     .with_system(z_depth_step)
-                    .with_system(collision_step), // .with_system(snake_collisionScope_event.after(collision_step)),
+                    // .with_system(collision_step), 
+                    // .with_system(snake_collisionScope_event.after(collision_step)),
             );
     }
 }

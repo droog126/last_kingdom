@@ -130,3 +130,14 @@ cargo run --features bevy/trace_chrome
 1w 可以用实例
 2w 碰撞检测
 有42到47帧数左右
+
+10000:42
+
+去除snake_step
+10000:72
+20000:30
+
+去除 collision
+10000:100
+20000:54
+优化手段是什么呢？

@@ -5,6 +5,7 @@ use crate::{
     // instance::snake::snake_create_raw,
     state::loading::SpriteCenter,
     systems::{camera::CursorPosition, instance::shadow::ShadowAsset},
+    utils::random::random_range,
 };
 
 use super::DebugStatus;
@@ -28,22 +29,22 @@ fn step(
         return;
     }
     if (mouseInput.just_pressed(MouseButton::Left)) {
-        snake_create_raw(
-            &mut commands,
-            &mut spriteCenter,
-            &mut shadowHandle,
-            cursorPosition.x,
-            cursorPosition.y,
-        );
+        // snake_create_raw(
+        //     &mut commands,
+        //     &mut spriteCenter,
+        //     &mut shadowHandle,
+        //     cursorPosition.x,
+        //     cursorPosition.y,
+        // );
         // println!("create snake{:?}", cursorPosition);
         for _ in 0..10000 {
-            // snake_create_raw(
-            //     &mut commands,
-            //     &mut spriteCenter,
-            //     &mut shadowHandle,
-            //     cursorPosition.x,
-            //     cursorPosition.y,
-            // );
+            snake_create_raw(
+                &mut commands,
+                &mut spriteCenter,
+                &mut shadowHandle,
+                cursorPosition.x + random_range(-1000.0, 1000.0),
+                cursorPosition.y + random_range(-1000.0, 1000.0),
+            );
         }
     }
 }
