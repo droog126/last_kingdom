@@ -1,4 +1,4 @@
-use bevy::{core::FixedTimestep, math::Vec3Swizzles, prelude::*};
+use bevy::{core::FixedTimestep, math::Vec3Swizzles, prelude::*, utils::hashbrown::HashMap};
 use bevy_prototype_lyon::{
     prelude::{tess::geom::Vector, *},
     render::Shape,
@@ -7,8 +7,6 @@ use duckduckgeo::{self, ErrTooClose};
 
 use broccoli::{
     axgeom::Rect,
-    prelude::*,
-    queries::intersect_with::intersect_with_iter_mut,
     tree::{
         aabb_pin::AabbPin,
         bbox,
@@ -16,6 +14,8 @@ use broccoli::{
         rect,
     },
 };
+
+use crate::instance::InstanceType;
 
 use super::debug::egui::DebugTable;
 
@@ -43,9 +43,43 @@ pub struct CollisionBot {
     pub height: f32,
 }
 
+enum  CollisionInstanceType{
+    Static,
+    Scope,
+    Instance,
+}
+// 生产因子一般来源于需求，也就是消费者
+pub struct CollisionProductionFactor{
+    pub id:Entity,
+    pub _type:CollisionInstanceType,
+    pub pos:Vec2,
+
+    pub width:f32,
+    pub height:f32,
+    // pub is_accurate:bool
+}
+
+// 消费的是什么
+// 1.排斥力  2.静止进入 3.是否碰撞  2和3 可以合起来  
+// 共同点是 卧槽了，这不就是形状坐标吗? 不是点 不是点.
+
+pub struct CollisionEventMap {
+    pub map: HashMap<InstanceType, Vec<CollisionDessert>>,
+}
+pub struct CollisionDessert {
+   pub id:Entity,
+   // 后面这个需要改一下哈
+   pub x:f32,
+   pub y:f32,
+   pub width:f32,
+   pub height:f32,
+} 
+
+
 pub struct CollisionPlugin;
 impl Plugin for CollisionPlugin {
     fn build(&self, app: &mut App) {
+        app.insert_resource()
         app.insert_resource(Msaa { samples: 4 })
             // .add_event::<CollisionScopeEvent>()
             .add_plugin(ShapePlugin)
@@ -58,6 +92,9 @@ fn startup(mut commands: Commands) {}
 // 需要在接受输入同步新位置后调用
 // query拿出来的值需要回收的，你不能把他的子属性取出来，因为他也不知道你什么时候回收.
 // 整体移入是所有权的转移  子属性移入可以是copy 或者 就是不能
+// 感觉哈，只需要这里告诉我他们是否碰撞了, 然后他们自己在自己的step里面处理自己的碰撞就好了
+// snake_step 清空自己的碰撞事件(消费)  collision_step 接受碰撞(生产)
+// 
 pub fn collision_step(
     mut query: Query<(&GlobalTransform, &mut Transform, &mut CollisionBot)>,
     mut debugTable: ResMut<DebugTable>,
@@ -124,12 +161,14 @@ pub fn collision_step(
         debugTable.collisionCount = Some(dynBots.len());
     }
 
-    let mut tree = broccoli::tree::new_par(&mut dynBots);
+    let mut tree = broccoli::Tree::par_new(&mut dynBots);
 
     // 实体和墙碰撞  把碰撞的那边坐标传过去
-    for i in AabbPin::new(staBots.as_mut_slice()).iter_mut() {
-        tree.for_all_intersect_rect_mut(i, |r, mut a| {
-            let (rect, bot) = a.destruct_mut();
+
+    tree.find_colliding_pairs_with_iter(
+        AabbPin::new(staBots.as_mut_slice()).iter_mut(),
+        |mut bot, r| {
+            let (rect, bot) = bot.destruct_mut();
 
             let wallx = &r.x;
             let wally = &r.y;
@@ -151,10 +190,10 @@ pub fn collision_step(
                 }
                 _ => {}
             }
-        })
-    }
+        },
+    );
 
-    tree.colliding_pairs_builder(|a, b| {
+    tree.par_find_colliding_pairs(|a, b| {
         let a = a.unpack_inner();
         let b = b.unpack_inner();
         match (&mut a.collisionInner, &mut b.collisionInner) {
@@ -197,8 +236,7 @@ pub fn collision_step(
             }
             _ => {}
         }
-    })
-    .build_par();
+    });
 }
 
 pub fn repel(bots: [(&mut Vec2, &mut Vec2); 2], closest: f32, mag: f32) -> Result<(), ErrTooClose> {
