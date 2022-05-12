@@ -1,5 +1,5 @@
 use crate::state::loading::SpriteCenter;
-use crate::systems::collision::{CollisionBot, CollisionID};
+use crate::systems::collision::CollisionID;
 use crate::systems::debug::DebugStatus;
 use crate::systems::instance::shadow::ShadowAsset;
 use crate::systems::instance::InstanceCollisionTag;
@@ -95,9 +95,17 @@ pub fn snake_create_raw(
         .insert(SnakeTag)
         .id();
 
-    let collisionId = create_instance_collision(&mut commands, x, y, 20.0, 10.0);
-    let scopeCollisionId =
-        create_scope_collision(&mut commands, collisionId, 0.0, 0.0, 100.0, 100.0);
+    let collisionId =
+        create_instance_collision(&mut commands, InstanceType::Snake, x, y, 20.0, 10.0);
+    let scopeCollisionId = create_scope_collision(
+        &mut commands,
+        collisionId,
+        InstanceType::Snake,
+        0.0,
+        0.0,
+        100.0,
+        100.0,
+    );
 
     // player后置添加
     commands.entity(instanceId).insert(CollisionID(collisionId));
@@ -129,112 +137,112 @@ pub fn snake_step(
     mut changeStateEvent: EventWriter<StateChangeEvt>,
     debugStatus: Res<DebugStatus>,
     mut set: ParamSet<(
-        Query<&mut CollisionBot, With<SnakeScopeCollisionTag>>,
         Query<(&Transform, &InstanceCategory), With<InstanceCollisionTag>>,
         Query<(&mut Transform, &mut SnakeAi, &AnimationInstanceId), With<SnakeCollisionTag>>,
     )>,
     timeLine: Res<TimeLine>,
 ) {
-    let timeLineRaw = timeLine.0;
-    let mut query = set.p0();
-    let mut snakeScopeOtherMap = HashMap::new();
-    let mut snakeOtherInfoMap = HashMap::new();
-
-    for mut collisionBot in query.iter_mut() {
-        match &mut collisionBot.collisionInner {
-            crate::systems::collision::CollisionInner::Scope { other, parentId } => {
-                snakeScopeOtherMap.insert(parentId.clone(), other.clone());
-                other.clear();
-            }
-            _ => {}
-        }
-    }
     return;
-    // 这里是不是可以过滤一下?
-    let mut query = set.p1();
-    for (entity, OtherEntities) in snakeScopeOtherMap {
-        let mut otherInfos = vec![];
-        for (otherEntity) in OtherEntities {
-            if let Ok((transform, instanceCategory)) = query.get(otherEntity) {
-                // otherInfo.push((*transform, instanceCategory.clone()));
-                match instanceCategory.camp {
-                    InstanceCamp::Neutral => {
-                        otherInfos.push((*transform, instanceCategory.clone()));
-                    }
-                    InstanceCamp::Hostile => {}
-                    InstanceCamp::Friendly => {
-                        otherInfos.push((*transform, instanceCategory.clone()));
-                    }
-                    InstanceCamp::Team { team_id } => {
-                        otherInfos.push((*transform, instanceCategory.clone()));
-                    }
-                }
-            }
-        }
-        // snakeOtherInfoMap.insert(entity, otherInfo);
-        // 这里我只想第一个
-        snakeOtherInfoMap.insert(entity, otherInfos);
-    }
+    // let timeLineRaw = timeLine.0;
+    // let mut query = set.p0();
+    // let mut snakeScopeOtherMap = HashMap::new();
+    // let mut snakeOtherInfoMap = HashMap::new();
 
-    // instanceId : [otherInfo,otherInfo,otherInfo]
-    let mut query = set.p2();
+    // for mut collisionBot in query.iter_mut() {
+    //     match &mut collisionBot.collisionInner {
+    //         crate::systems::collision::CollisionInner::Scope { other, parentId } => {
+    //             snakeScopeOtherMap.insert(parentId.clone(), other.clone());
+    //             other.clear();
+    //         }
+    //         _ => {}
+    //     }
+    // }
+    // return;
+    // // 这里是不是可以过滤一下?
+    // let mut query = set.p1();
+    // for (entity, OtherEntities) in snakeScopeOtherMap {
+    //     let mut otherInfos = vec![];
+    //     for (otherEntity) in OtherEntities {
+    //         if let Ok((transform, instanceCategory)) = query.get(otherEntity) {
+    //             // otherInfo.push((*transform, instanceCategory.clone()));
+    //             match instanceCategory.camp {
+    //                 InstanceCamp::Neutral => {
+    //                     otherInfos.push((*transform, instanceCategory.clone()));
+    //                 }
+    //                 InstanceCamp::Hostile => {}
+    //                 InstanceCamp::Friendly => {
+    //                     otherInfos.push((*transform, instanceCategory.clone()));
+    //                 }
+    //                 InstanceCamp::Team { team_id } => {
+    //                     otherInfos.push((*transform, instanceCategory.clone()));
+    //                 }
+    //             }
+    //         }
+    //     }
+    //     // snakeOtherInfoMap.insert(entity, otherInfo);
+    //     // 这里我只想第一个
+    //     snakeOtherInfoMap.insert(entity, otherInfos);
+    // }
 
-    for (entity, otherInfos) in snakeOtherInfoMap {
-        if let Ok((mut instanceTransform, mut snakeAi, animationInstanceId)) = query.get_mut(entity)
-        {
-            let len = otherInfos.len();
+    // // instanceId : [otherInfo,otherInfo,otherInfo]
+    // let mut query = set.p2();
 
-            if len >= 1 {
-                // 遇到目标
-                let (targetTransform, _) = &otherInfos[0];
-                let mut diff = targetTransform.translation - instanceTransform.translation;
-                diff = diff.normalize();
-                instanceTransform.translation += diff * time.delta_seconds() * 100.0;
+    // for (entity, otherInfos) in snakeOtherInfoMap {
+    //     if let Ok((mut instanceTransform, mut snakeAi, animationInstanceId)) = query.get_mut(entity)
+    //     {
+    //         let len = otherInfos.len();
 
-                let newActState = StateMachine::Walk;
-                let newActXScale = diff.x;
-                changeStateEvent.send(StateChangeEvt {
-                    ins: animationInstanceId.0,
-                    newState: newActState,
-                    xDir: newActXScale,
-                });
-            } else {
-                // 没有遇到目标
-                match snakeAi.state {
-                    AiState::stroll { dir, nextTime } => {
-                        // println!("stroll {:?} {:?}", dir, nextTime);
-                        instanceTransform.translation +=
-                            dir.extend(0.0) * time.delta_seconds() * 100.0;
+    //         if len >= 1 {
+    //             // 遇到目标
+    //             let (targetTransform, _) = &otherInfos[0];
+    //             let mut diff = targetTransform.translation - instanceTransform.translation;
+    //             diff = diff.normalize();
+    //             instanceTransform.translation += diff * time.delta_seconds() * 100.0;
 
-                        if timeLineRaw > nextTime {
-                            snakeAi.state = AiState::daze;
-                        }
-                        let newActState = StateMachine::Walk;
-                        let newActXScale = dir.x;
-                        changeStateEvent.send(StateChangeEvt {
-                            ins: animationInstanceId.0,
-                            newState: newActState,
-                            xDir: newActXScale,
-                        });
-                    }
-                    AiState::daze => {
-                        if random_in_unlimited(1.0 / 10.0, time.delta_seconds()) {
-                            snakeAi.state = AiState::stroll {
-                                dir: random_Vec2(),
-                                nextTime: timeLineRaw
-                                    + (60.0 * random_range::<f32>(0.5, 2.0)) as i32,
-                            };
-                        }
+    //             let newActState = StateMachine::Walk;
+    //             let newActXScale = diff.x;
+    //             changeStateEvent.send(StateChangeEvt {
+    //                 ins: animationInstanceId.0,
+    //                 newState: newActState,
+    //                 xDir: newActXScale,
+    //             });
+    //         } else {
+    //             // 没有遇到目标
+    //             match snakeAi.state {
+    //                 AiState::stroll { dir, nextTime } => {
+    //                     // println!("stroll {:?} {:?}", dir, nextTime);
+    //                     instanceTransform.translation +=
+    //                         dir.extend(0.0) * time.delta_seconds() * 100.0;
 
-                        let newActState = StateMachine::Idle;
-                        changeStateEvent.send(StateChangeEvt {
-                            ins: animationInstanceId.0,
-                            newState: newActState,
-                            xDir: 0.0,
-                        });
-                    }
-                }
-            }
-        }
-    }
+    //                     if timeLineRaw > nextTime {
+    //                         snakeAi.state = AiState::daze;
+    //                     }
+    //                     let newActState = StateMachine::Walk;
+    //                     let newActXScale = dir.x;
+    //                     changeStateEvent.send(StateChangeEvt {
+    //                         ins: animationInstanceId.0,
+    //                         newState: newActState,
+    //                         xDir: newActXScale,
+    //                     });
+    //                 }
+    //                 AiState::daze => {
+    //                     if random_in_unlimited(1.0 / 10.0, time.delta_seconds()) {
+    //                         snakeAi.state = AiState::stroll {
+    //                             dir: random_Vec2(),
+    //                             nextTime: timeLineRaw
+    //                                 + (60.0 * random_range::<f32>(0.5, 2.0)) as i32,
+    //                         };
+    //                     }
+
+    //                     let newActState = StateMachine::Idle;
+    //                     changeStateEvent.send(StateChangeEvt {
+    //                         ins: animationInstanceId.0,
+    //                         newState: newActState,
+    //                         xDir: 0.0,
+    //                     });
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
 }
