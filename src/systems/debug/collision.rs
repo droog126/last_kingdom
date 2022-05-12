@@ -1,7 +1,10 @@
 use crate::{
-    instance::utils::{create_instance_collision, create_sta_collision},
+    instance::{
+        utils::{create_instance_collision, create_sta_collision},
+        InstanceType,
+    },
     // instance::utils::{createDynCollision, createStaCollision},
-    systems::{camera::CursorPosition, collision::CollisionBot},
+    systems::{camera::CursorPosition, collision::CollisionProductionFactor},
     utils::random::{random_arr2, random_arr4},
 };
 use bevy::{ecs::schedule::ShouldRun, prelude::*};
@@ -31,7 +34,7 @@ fn startup(mut commands: Commands) {}
 
 fn first(
     mut commands: Commands,
-    mut query: Query<&mut Visibility, With<CollisionBot>>,
+    mut query: Query<&mut Visibility, With<CollisionProductionFactor>>,
     mut debugStatus: ResMut<DebugStatus>,
     mut local: Local<bool>,
 ) {
@@ -52,7 +55,9 @@ fn step(
     if mouseInput.just_pressed(MouseButton::Middle) {
         let mut ids = random_arr2(1000, 1000)
             .take(1000)
-            .map(|[x, y]| create_instance_collision(&mut commands, x, y, 10.0, 10.0))
+            .map(|[x, y]| {
+                create_instance_collision(&mut commands, InstanceType::Player, x, y, 10.0, 10.0)
+            })
             .collect::<Vec<_>>();
     }
 

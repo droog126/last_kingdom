@@ -1,7 +1,7 @@
 use crate::instance::utils::create_instance_collision;
 use crate::instance::{InstanceCamp, InstanceCategory, InstanceType};
 use crate::state::loading::SpriteCenter;
-use crate::systems::collision::{CollisionBot, CollisionID};
+use crate::systems::collision::CollisionID;
 use crate::systems::debug::DebugStatus;
 use crate::systems::input::InsInput;
 use crate::systems::instance::shadow::ShadowAsset;
@@ -110,7 +110,8 @@ pub fn player_create(
             origin: RectangleOrigin::Center,
         };
 
-        let collisionId = create_instance_collision(&mut commands, 0.0, 0.0, 20.0, 10.0);
+        let collisionId =
+            create_instance_collision(&mut commands, InstanceType::Player, 0.0, 0.0, 20.0, 10.0);
 
         // player后置添加
         commands.entity(instanceId).insert(CollisionID(collisionId));

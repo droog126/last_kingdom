@@ -4,10 +4,11 @@ pub mod player;
 pub mod snake;
 pub mod utils;
 
-#[derive(Debug, Clone)]
+#[derive(Clone, Debug, PartialEq, Copy, Hash, std::cmp::Eq)]
 pub enum InstanceType {
     Player,
     Snake,
+    Wall,
 }
 
 #[derive(Debug, Clone)]

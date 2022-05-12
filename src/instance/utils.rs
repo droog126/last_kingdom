@@ -1,12 +1,15 @@
-use crate::systems::collision::{CollisionBot, CollisionInner};
+use crate::systems::collision::{CollisionInner, CollisionProductionFactor, CollisionType};
 use crate::systems::instance::InstanceCollisionTag;
 use crate::utils::num::y_to_z;
 use bevy::math::Vec2;
 use bevy::prelude::*;
 use bevy_prototype_lyon::prelude::*;
 
+use super::InstanceType;
+
 pub fn create_instance_collision(
     commands: &mut Commands,
+    instanceType: InstanceType,
     x: f32,
     y: f32,
     width: f32,
@@ -27,16 +30,16 @@ pub fn create_instance_collision(
         .insert(InstanceCollisionTag)
         .id();
 
-    commands.entity(collisionId).insert(CollisionBot {
-        collisionInner: CollisionInner::Instance {
+    commands
+        .entity(collisionId)
+        .insert(CollisionProductionFactor {
+            id: collisionId,
+            instanceType: instanceType,
+            collisionType: CollisionType::Instance,
             pos: Vec2::new(x, y),
-            force: Vec2::new(0.0, 0.0),
-            wall_move: [None, None],
-        },
-        width: width,
-        height: height,
-        id: collisionId,
-    });
+            width: width,
+            height: height,
+        });
     return collisionId;
 }
 
@@ -60,12 +63,16 @@ pub fn create_sta_collision(
         .insert(Name::new("staCollision"))
         // .insert(Visibility { is_visible: false })
         .id();
-    commands.entity(collisionId).insert(CollisionBot {
-        id: collisionId,
-        width: width,
-        height: height,
-        collisionInner: CollisionInner::Static,
-    });
+    commands
+        .entity(collisionId)
+        .insert(CollisionProductionFactor {
+            id: collisionId,
+            instanceType: InstanceType::Wall,
+            collisionType: CollisionType::Static,
+            pos: Vec2::new(x, y),
+            width: width,
+            height: height,
+        });
 
     return collisionId;
 }
@@ -73,6 +80,8 @@ pub fn create_sta_collision(
 pub fn create_scope_collision(
     commands: &mut Commands,
     parentId: Entity,
+    instanceType: InstanceType,
+
     x: f32,
     y: f32,
     width: f32,
@@ -87,14 +96,15 @@ pub fn create_scope_collision(
         })
         .id();
 
-    commands.entity(collisionId).insert(CollisionBot {
-        collisionInner: CollisionInner::Scope {
-            other: vec![],
-            parentId: parentId,
-        },
-        width: width,
-        height: height,
-        id: collisionId,
-    });
+    commands
+        .entity(collisionId)
+        .insert(CollisionProductionFactor {
+            id: parentId,
+            instanceType: instanceType,
+            collisionType: CollisionType::Scope,
+            pos: Vec2::new(x, y),
+            width: width,
+            height: height,
+        });
     return collisionId;
 }
