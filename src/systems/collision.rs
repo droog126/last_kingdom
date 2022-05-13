@@ -1,3 +1,10 @@
+use std::{
+    borrow::BorrowMut,
+    cell::RefCell,
+    rc::Rc,
+    sync::{Arc, Mutex},
+};
+
 use bevy::{core::FixedTimestep, math::Vec3Swizzles, prelude::*, utils::hashbrown::HashMap};
 use bevy_prototype_lyon::{
     prelude::{tess::geom::Vector, *},
@@ -71,16 +78,19 @@ pub struct CollisionDessert {
 // 1.排斥力  2.静止进入 3.是否碰撞  2和3 可以合起来
 // 共同点是 卧槽了，这不就是形状坐标吗? 不是点 不是点.
 
+unsafe impl Send for CollisionEventMap {
+    //其中 X 保证永远不会在自身之外克隆 Rc，也不让结构的用户直接访问 Rc，也不将 Rc 存储在某个 thread_local 变量中。
+}
 pub struct CollisionEventMap {
-    pub map: HashMap<InstanceType, HashMap<Entity, Vec<CollisionDessert>>>,
+    pub map: Arc<Mutex<HashMap<InstanceType, HashMap<Entity, Vec<CollisionDessert>>>>>,
 }
 
 pub struct CollisionPlugin;
 impl Plugin for CollisionPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(CollisionEventMap {
-            map: HashMap::new(),
-        });
+        let map = Arc::new(Mutex::new(HashMap::new()));
+
+        app.insert_resource(CollisionEventMap { map: map.clone() });
         app.insert_resource(Msaa { samples: 4 })
             // .add_event::<CollisionScopeEvent>()
             .add_plugin(ShapePlugin)
@@ -99,9 +109,9 @@ fn startup(mut commands: Commands) {}
 pub fn collision_step(
     mut query: Query<(&GlobalTransform, &CollisionProductionFactor)>,
     mut debugTable: ResMut<DebugTable>,
-    mut collisionEventMapStruct: ResMut<CollisionEventMap>,
+    collisionEventMapStruct: Res<CollisionEventMap>,
 ) {
-    let mut collisionEventMap = &mut collisionEventMapStruct.map;
+    let collisionEventMap = collisionEventMapStruct.map.clone();
     let mut staBots: Vec<_> = vec![];
 
     let mut dynBots: Vec<_> = vec![];
@@ -179,7 +189,7 @@ pub fn collision_step(
             // let curEventMap = collisionEventMap.get_mut(&bot.instanceType).unwrap();
 
             add_collision_event(
-                collisionEventMap,
+                collisionEventMap.borrow_mut(),
                 bot.instanceType,
                 bot.id,
                 CollisionDessert {
@@ -253,7 +263,7 @@ pub fn collision_step(
         let aBot = a.unpack_inner();
         let bBot = b.unpack_inner();
         add_collision_event(
-            collisionEventMap,
+            collisionEventMap.borrow_mut(),
             bBot.instanceType,
             bBot.id,
             CollisionDessert {
