@@ -37,7 +37,7 @@ fn step(
         //     cursorPosition.y,
         // );
         // println!("create snake{:?}", cursorPosition);
-        for _ in 0..10000 {
+        for _ in 0..1 {
             snake_create_raw(
                 &mut commands,
                 &mut spriteCenter,

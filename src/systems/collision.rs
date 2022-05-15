@@ -63,7 +63,7 @@ pub struct CollisionProductionFactor {
     // pub is_accurate:bool
 }
 
-#[derive(Component, Clone)]
+#[derive(Component, Clone, Debug)]
 pub struct CollisionDessert {
     pub id: Entity,
     // 后面这个需要改一下哈
@@ -82,15 +82,20 @@ unsafe impl Send for CollisionEventMap {
     //其中 X 保证永远不会在自身之外克隆 Rc，也不让结构的用户直接访问 Rc，也不将 Rc 存储在某个 thread_local 变量中。
 }
 pub struct CollisionEventMap {
-    pub map: Arc<Mutex<HashMap<InstanceType, HashMap<Entity, Vec<CollisionDessert>>>>>,
+    // pub map: Arc<Mutex<HashMap<InstanceType, HashMap<Entity, Vec<CollisionDessert>>>>>,
+    pub map: HashMap<InstanceType, HashMap<Entity, Vec<CollisionDessert>>>,
 }
 
 pub struct CollisionPlugin;
 impl Plugin for CollisionPlugin {
     fn build(&self, app: &mut App) {
-        let map = Arc::new(Mutex::new(HashMap::new()));
+        // let map = Arc::new(Mutex::new(HashMap::new()));
+        // app.insert_resource(CollisionEventMap { map: map.clone() });
 
-        app.insert_resource(CollisionEventMap { map: map.clone() });
+        app.insert_resource(CollisionEventMap {
+            map: HashMap::new(),
+        });
+
         app.insert_resource(Msaa { samples: 4 })
             // .add_event::<CollisionScopeEvent>()
             .add_plugin(ShapePlugin)
@@ -109,9 +114,11 @@ fn startup(mut commands: Commands) {}
 pub fn collision_step(
     mut query: Query<(&GlobalTransform, &CollisionProductionFactor)>,
     mut debugTable: ResMut<DebugTable>,
-    collisionEventMapStruct: Res<CollisionEventMap>,
+    mut collisionEventMapStruct: ResMut<CollisionEventMap>,
 ) {
-    let collisionEventMap = collisionEventMapStruct.map.clone();
+    // let mut collisionEventMap = &mut collisionEventMapStruct.map;
+    // let mut collisionEventMap=HashMap::new();
+
     let mut staBots: Vec<_> = vec![];
 
     let mut dynBots: Vec<_> = vec![];
@@ -133,43 +140,7 @@ pub fn collision_step(
                 let mut newCollisionProductionFactor = collisionProductionFactor.clone();
                 newCollisionProductionFactor.pos = globalTransform.translation.xy();
                 dynBots.push(bbox(rect, newCollisionProductionFactor));
-            } // CollisionType::Scope { other, parentId } => dynBots.push(bbox(rect, collisionBot)),
-              // CollisionType::Instance {
-              //     pos,
-              //     force,
-              //     wall_move,
-              // } => {
-              //     transform.translation.x += force.x;
-              //     transform.translation.y += force.y;
-              //     force.x = 0.0;
-              //     force.y = 0.0;
-              //     // 静静碰撞影响
-              //     if let Some(dir) = wall_move[0] {
-              //         if let Some(pos) = wall_move[1] {
-              //             match dir {
-              //                 1. => {
-              //                     transform.translation.y = pos - configHeight / 2. - 0.1;
-              //                 }
-              //                 2. => {
-              //                     transform.translation.x = pos + configWidth / 2. + 0.1;
-              //                 }
-              //                 3. => {
-              //                     transform.translation.y = pos + configHeight / 2. + 0.1;
-              //                 }
-              //                 4. => {
-              //                     transform.translation.x = pos - configWidth / 2. - 0.1;
-              //                 }
-              //                 _ => {}
-              //             }
-              //         }
-              //     }
-
-              //     wall_move[0] = None;
-              //     wall_move[1] = None;
-              //     pos.x = transform.translation.x;
-              //     pos.y = transform.translation.y;
-              //     dynBots.push(bbox(rect, collisionBot))
-              // }
+            }
         }
     }
 
@@ -180,159 +151,65 @@ pub fn collision_step(
 
     let mut tree = broccoli::Tree::par_new(&mut dynBots);
 
-    // 实体和墙碰撞  把碰撞的那边坐标传过去
-
-    tree.find_colliding_pairs_with_iter(
-        AabbPin::new(staBots.as_mut_slice()).iter_mut(),
-        |mut bot, r| {
-            let (rect, bot) = bot.destruct_mut();
-            // let curEventMap = collisionEventMap.get_mut(&bot.instanceType).unwrap();
-
+    let mut collisionEventMap = tree.par_find_colliding_pairs_acc(
+        HashMap::new(),
+        |_| HashMap::new(),
+        |a, b| {},
+        |v, a, b| {
+            let aBot = a.unpack_inner();
+            let bBot = b.unpack_inner();
             add_collision_event(
-                collisionEventMap.borrow_mut(),
-                bot.instanceType,
-                bot.id,
+                v,
+                bBot.instanceType,
+                bBot.id,
                 CollisionDessert {
-                    id: bot.id,
-                    pos: Vec2::new(
-                        (rect.x.start + rect.x.end) / 2.,
-                        (rect.y.start + rect.y.end) / 2.,
-                    ),
-                    width: rect.x.end - rect.x.start,
-                    height: rect.y.end - rect.y.start,
-                    collisionType: CollisionType::Static,
-                    instanceType: bot.instanceType,
+                    id: aBot.id,
+                    collisionType: aBot.collisionType,
+                    instanceType: aBot.instanceType,
+                    pos: aBot.pos,
+                    width: aBot.width,
+                    height: aBot.height,
+                },
+            );
+            add_collision_event(
+                v,
+                aBot.instanceType,
+                aBot.id,
+                CollisionDessert {
+                    id: bBot.id,
+                    collisionType: bBot.collisionType,
+                    instanceType: bBot.instanceType,
+                    pos: bBot.pos,
+                    width: bBot.width,
+                    height: bBot.height,
                 },
             );
         },
     );
-    //         // let curEventVec = curEventMap.get_mut(&bot.id).unwrap_or(&mut Vec::new());
-    //         // curEventVec.push(CollisionDessert {
-    //         //     id: bot.id,
-    //         //     pos: bot.pos,
-    //         //     width: bot.width,
-    //         //     height: bot.height,
-    //         //     collisionType: bot.collisionType,
-    //         //     instanceType: bot.instanceType,
-    //         // });
-    //         // let wallx = &r.x;
-    //         // let wally = &r.y;
-    //         // let ret = match duckduckgeo::collide_with_rect(&rect, &r).unwrap() {
-    //         //     duckduckgeo::WallSide::Above => [Some(1.), Some(wally.start)],
-    //         //     duckduckgeo::WallSide::Below => [Some(3.), Some(wally.end)],
-    //         //     duckduckgeo::WallSide::LeftOf => [Some(4.), Some(wallx.start)],
-    //         //     duckduckgeo::WallSide::RightOf => [Some(2.), Some(wallx.end)],
-    //         // };
 
-    //         // match &mut bot.collisionInner {
-    //         //     CollisionInner::Instance {
-    //         //         pos,
-    //         //         force,
-    //         //         wall_move,
-    //         //     } => {
-    //         //         wall_move[0] = ret[0];
-    //         //         wall_move[1] = ret[1];
-    //         //     }
-    //         //     _ => {}
-    //         // }
-    //     },
-    // );
+    for i in AabbPin::new(staBots.as_mut_slice()).iter_mut() {
+        tree.find_all_intersect_rect(i, |r, mut a| {
+            let (rect, bot) = a.destruct_mut();
+            add_collision_event(
+                &mut collisionEventMap,
+                bot.instanceType,
+                bot.id,
+                CollisionDessert {
+                    id: bot.id,
+                    collisionType: CollisionType::Static,
+                    instanceType: InstanceType::Wall,
+                    pos: Vec2::new(
+                        rect.x.start + rect.x.end / 2.,
+                        rect.y.start + rect.y.end / 2.,
+                    ),
+                    width: rect.x.end - rect.x.start,
+                    height: rect.y.end - rect.y.start,
+                },
+            );
+        })
+    }
 
-    // let mut handle = |a: AabbPin<&mut BBox<f32, CollisionProductionFactor>>,
-    //                   b: AabbPin<&mut BBox<f32, CollisionProductionFactor>>| {
-    //     let aBot = a.unpack_inner();
-    //     let bBot = b.unpack_inner();
-    //     // 这里有闭包，会报错。
-
-    //     add_collision_event(
-    //         collisionEventMap,
-    //         aBot.instanceType.clone(),
-    //         aBot.id.clone(),
-    //         CollisionDessert {
-    //             id: bBot.id.clone(),
-    //             collisionType: bBot.collisionType.clone(),
-    //             instanceType: bBot.instanceType.clone(),
-    //             pos: bBot.pos,
-    //             width: bBot.width,
-    //             height: bBot.height,
-    //         },
-    //     );
-    // };
-    // tree.par_find_colliding_pairs(handle);
-    tree.par_find_colliding_pairs(|a, b| {
-        let aBot = a.unpack_inner();
-        let bBot = b.unpack_inner();
-        add_collision_event(
-            collisionEventMap.borrow_mut(),
-            bBot.instanceType,
-            bBot.id,
-            CollisionDessert {
-                id: aBot.id,
-                collisionType: aBot.collisionType,
-                instanceType: aBot.instanceType,
-                pos: aBot.pos,
-                width: aBot.width,
-                height: aBot.height,
-            },
-        );
-
-        // let curEventMap = collisionEventMap
-        //     .get_mut(&aBot.instanceType)s
-        //     .unwrap_or(&mut HashMap::new());
-        // let curEventVec = curEventMap.get_mut(&aBot.id).unwrap_or(&mut Vec::new());
-        // curEventVec.push(CollisionDessert {
-        //     id: bBot.id,
-        //     pos: bBot.pos,
-        //     width: bBot.width,
-        //     height: bBot.height,
-        //     collisionType: bBot.collisionType,
-        //     instanceType: bBot.instanceType,
-        // });
-
-        // curEventVec.push(CollisionDessert {
-        //     id: a.id,
-
-        // match (&mut a.collisionInner, &mut b.collisionInner) {
-        //     (
-        //         CollisionInner::Instance {
-        //             pos,
-        //             force,
-        //             wall_move,
-        //         },
-        //         CollisionInner::Instance {
-        //             pos: b_pos,
-        //             force: b_force,
-        //             wall_move: b_wall_move,
-        //         },
-        //     ) => {
-        //         repel([(pos, force), (b_pos, b_force)], 0.001, 1.);
-        //     }
-        //     // (CollisionInner::Scope { other }, CollisionInner::Scope { other: b_other }) => todo!(),
-        //     (
-        //         CollisionInner::Scope { other, parentId },
-        //         CollisionInner::Instance {
-        //             pos,
-        //             force,
-        //             wall_move,
-        //         },
-        //     ) => {
-        //         // println!("id:{:?}", b.id);
-        //         other.push(b.id);
-        //     }
-        //     (
-        //         CollisionInner::Instance {
-        //             pos,
-        //             force,
-        //             wall_move,
-        //         },
-        //         CollisionInner::Scope { other, parentId },
-        //     ) => {
-        //         other.push(a.id);
-        //         // println!("id:{:?}", a.id);
-        //     }
-        //     _ => {}
-        // }
-    });
+    // println!("collisionEventMap: {:?}", collisionEventMap);
 }
 
 pub fn repel(bots: [(&mut Vec2, &mut Vec2); 2], closest: f32, mag: f32) -> Result<(), ErrTooClose> {

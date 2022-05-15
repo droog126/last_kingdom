@@ -107,6 +107,8 @@ bevy_ecs_ldtk= "0.3.0" 性能也有点烂
 实例的children 有动画 阴影 范围
 主体包括  碰撞  ai  属性  动画实例索引  
 
+4. 镜头需要跟着y+z 移动才行
+
 
 ### P0
 1. ui
@@ -164,3 +166,7 @@ cargo run --features bevy/trace_chrome
 
 生产者需要输入的，这个输入需要捋清楚所有线路，才会知道生产因子.
 
+
+### nextTodo
+1. 看完3.6.5 
+2. ACC类型
