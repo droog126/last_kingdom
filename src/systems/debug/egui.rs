@@ -2,7 +2,7 @@ use crate::systems::{input::InsInput, stateMachine::InsState};
 use bevy::prelude::*;
 use bevy_inspector_egui::{Inspectable, RegisterInspectable, WorldInspectorPlugin};
 
-use bevy_editor_pls::EditorPlugin;
+// use bevy_editor_pls::EditorPlugin;
 
 use bevy_egui::{egui, EguiContext};
 
