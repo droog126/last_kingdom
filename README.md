@@ -135,11 +135,18 @@ cargo run --features bevy/trace_chrome
 
 10000:42
 
-去除snake_step
-10000:72
-20000:30
+none
+10000:122-135
+20000:60-70
 
-去除 collision
+
+only collision
+10000:90-100
+20000:45-50
+使用Mutex
+10000:35
+
+only snake_step
 10000:100
 20000:54
 优化手段是什么呢？

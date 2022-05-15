@@ -11,7 +11,9 @@ use bevy_prototype_lyon::{
     render::Shape,
 };
 use duckduckgeo::{self, ErrTooClose};
+use rand::{thread_rng, Rng};
 
+use crate::instance::InstanceType;
 use broccoli::{
     axgeom::Rect,
     tree::{
@@ -21,8 +23,7 @@ use broccoli::{
         rect,
     },
 };
-
-use crate::instance::InstanceType;
+use dashmap::DashMap;
 
 use super::debug::egui::DebugTable;
 
@@ -150,66 +151,81 @@ pub fn collision_step(
     }
 
     let mut tree = broccoli::Tree::par_new(&mut dynBots);
+    // let map: Arc<DashMap<String, String>> = Arc::new(DashMap::new())
+    let map: DashMap<u16, String> = DashMap::new();
+    unsafe {
+        // let counter = Arc::new(Mutex::new(1));
+        tree.par_find_colliding_pairs(|a, b| {
+            // let newMap = Arc::clone(&map);
+            // println!("counter:{:?}", counter);
+            // let newCounter = Arc::clone(&counter);
+            // let mut newCounter = counter.lock().unwrap();
+            // *newCounter += 1;
+            let mut rng = thread_rng();
 
-    let mut collisionEventMap = tree.par_find_colliding_pairs_acc(
-        HashMap::new(),
-        |_| HashMap::new(),
-        |a, b| {},
-        |v, a, b| {
-            let aBot = a.unpack_inner();
-            let bBot = b.unpack_inner();
-            add_collision_event(
-                v,
-                bBot.instanceType,
-                bBot.id,
-                CollisionDessert {
-                    id: aBot.id,
-                    collisionType: aBot.collisionType,
-                    instanceType: aBot.instanceType,
-                    pos: aBot.pos,
-                    width: aBot.width,
-                    height: aBot.height,
-                },
-            );
-            add_collision_event(
-                v,
-                aBot.instanceType,
-                aBot.id,
-                CollisionDessert {
-                    id: bBot.id,
-                    collisionType: bBot.collisionType,
-                    instanceType: bBot.instanceType,
-                    pos: bBot.pos,
-                    width: bBot.width,
-                    height: bBot.height,
-                },
-            );
-        },
-    );
-
-    for i in AabbPin::new(staBots.as_mut_slice()).iter_mut() {
-        tree.find_all_intersect_rect(i, |r, mut a| {
-            let (rect, bot) = a.destruct_mut();
-            add_collision_event(
-                &mut collisionEventMap,
-                bot.instanceType,
-                bot.id,
-                CollisionDessert {
-                    id: bot.id,
-                    collisionType: CollisionType::Static,
-                    instanceType: InstanceType::Wall,
-                    pos: Vec2::new(
-                        rect.x.start + rect.x.end / 2.,
-                        rect.y.start + rect.y.end / 2.,
-                    ),
-                    width: rect.x.end - rect.x.start,
-                    height: rect.y.end - rect.y.start,
-                },
-            );
-        })
+            map.insert(rng.gen::<u16>(), "hello".to_string());
+        });
     }
 
-    // println!("collisionEventMap: {:?}", collisionEventMap);
+    // let mut collisionEventMap = tree.par_find_colliding_pairs_acc(
+    //     HashMap::new(),
+    //     |_| _,
+    //     |a, b| {},
+    //     |v, a, b| {
+    //         let aBot = a.unpack_inner();
+    //         let bBot = b.unpack_inner();
+    //         add_collision_event(
+    //             v,
+    //             bBot.instanceType,
+    //             bBot.id,
+    //             CollisionDessert {
+    //                 id: aBot.id,
+    //                 collisionType: aBot.collisionType,
+    //                 instanceType: aBot.instanceType,
+    //                 pos: aBot.pos,
+    //                 width: aBot.width,
+    //                 height: aBot.height,
+    //             },
+    //         );
+    //         add_collision_event(
+    //             v,
+    //             aBot.instanceType,
+    //             aBot.id,
+    //             CollisionDessert {
+    //                 id: bBot.id,
+    //                 collisionType: bBot.collisionType,
+    //                 instanceType: bBot.instanceType,
+    //                 pos: bBot.pos,
+    //                 width: bBot.width,
+    //                 height: bBot.height,
+    //             },
+    //         );
+    //     },
+    // );
+
+    // for i in AabbPin::new(staBots.as_mut_slice()).iter_mut() {
+    //     tree.find_all_intersect_rect(i, |r, mut a| {
+    //         let (rect, bot) = a.destruct_mut();
+    //         add_collision_event(
+    //             &mut collisionEventMap,
+    //             bot.instanceType,
+    //             bot.id,
+    //             CollisionDessert {
+    //                 id: bot.id,
+    //                 collisionType: CollisionType::Static,
+    //                 instanceType: InstanceType::Wall,
+    //                 pos: Vec2::new(
+    //                     rect.x.start + rect.x.end / 2.,
+    //                     rect.y.start + rect.y.end / 2.,
+    //                 ),
+    //                 width: rect.x.end - rect.x.start,
+    //                 height: rect.y.end - rect.y.start,
+    //             },
+    //         );
+    //     })
+    // }
+
+    // println!("count: {:?}", count);
 }
 
 pub fn repel(bots: [(&mut Vec2, &mut Vec2); 2], closest: f32, mag: f32) -> Result<(), ErrTooClose> {
