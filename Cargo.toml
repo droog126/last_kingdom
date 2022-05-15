@@ -34,7 +34,7 @@ bevy_pkv="0.4.0"
 
 # 碰撞库
 duckduckgeo ={git="https://github.com/tiby312/duckduckgeo"}
-broccoli = "4.0.1"
+broccoli = "4.1.1"
 # duckduckgeo = "0.4.2"
 
 
