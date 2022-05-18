@@ -30,9 +30,13 @@ pub struct StateInfo {
 
 #[derive(Component, Clone)]
 
-pub struct InsState(pub StateMachine, pub f32, pub fn(&InsState) -> StateInfo);
+pub struct AnimationState(
+    pub StateMachine,
+    pub f32,
+    pub fn(&AnimationState) -> StateInfo,
+);
 
-impl InsState {
+impl AnimationState {
     fn get(&self) -> StateInfo {
         (self.2)(self)
     }
@@ -66,23 +70,10 @@ impl Plugin for StateMachinePlugin {
     }
 }
 
-// fn step(mut actMap: ResMut<NextActMap>, mut query: Query<(&Parent, &mut InsState)>) {
-//     let mut actMapRaw = &mut actMap.0;
-//     for (parent, insState) in query.iter() {
-//         actMapRaw.insert(
-//             parent.0,
-//             NextActMapValue {
-//                 nextState: insState.0,
-//                 nextXScale: insState.1,
-//             },
-//         );
-//     }
-// }
-
 fn state_trigger(
     mut stateChangeRead: EventReader<StateChangeEvt>,
     mut query: Query<(
-        &mut InsState,
+        &mut AnimationState,
         &mut TextureAtlasSprite,
         &mut Handle<TextureAtlas>,
         &mut Transform,
@@ -90,18 +81,18 @@ fn state_trigger(
     mut spriteCenter: ResMut<SpriteCenter>,
 ) {
     for ev in stateChangeRead.iter() {
-        if let Ok((mut insState, mut sprite, mut sprite_handle, mut transform)) =
+        if let Ok((mut animationState, mut sprite, mut sprite_handle, mut transform)) =
             query.get_mut(ev.ins)
         {
-            if (insState.0 != ev.newState) {
-                insState.0 = ev.newState;
+            if (animationState.0 != ev.newState) {
+                animationState.0 = ev.newState;
                 sprite.index = 0;
 
                 let StateInfo {
                     spriteName,
                     startIndex,
                     endIndex,
-                } = insState.get();
+                } = animationState.get();
 
                 let newSpriteHandle = spriteCenter.0.get(&spriteName).unwrap();
 
@@ -121,13 +112,13 @@ fn state_trigger(
     }
 }
 
-fn sprite_update(mut query: Query<(&mut InsState, &mut TextureAtlasSprite)>) {
-    for (mut insState, mut sprite) in query.iter_mut() {
+fn sprite_update(mut query: Query<(&mut AnimationState, &mut TextureAtlasSprite)>) {
+    for (mut animationState, mut sprite) in query.iter_mut() {
         let StateInfo {
             startIndex,
             endIndex,
             spriteName,
-        } = insState.get();
+        } = animationState.get();
 
         if (sprite.index >= endIndex) {
             sprite.index = startIndex;

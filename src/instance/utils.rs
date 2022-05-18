@@ -1,15 +1,21 @@
-use crate::systems::collision::{CollisionInner, CollisionProductionFactor, CollisionType};
+use crate::systems::collision::{CollisionInput, CollisionResultArr, CollisionShape};
 use crate::systems::instance::InstanceCollisionTag;
 use crate::utils::num::y_to_z;
 use bevy::math::Vec2;
 use bevy::prelude::*;
 use bevy_prototype_lyon::prelude::*;
 
-use super::InstanceType;
+use super::{
+    CollisionType, CollisionTypeValue, InstanceCamp, InstanceCampValue, InstanceType,
+    InstanceTypeValue,
+};
 
 pub fn create_instance_collision(
     commands: &mut Commands,
     instanceType: InstanceType,
+    instanceCamp: InstanceCamp,
+    collisionExcludeFunction: Option<fn(&InstanceType, &CollisionType, &InstanceCamp) -> bool>,
+
     x: f32,
     y: f32,
     width: f32,
@@ -32,14 +38,26 @@ pub fn create_instance_collision(
 
     commands
         .entity(collisionId)
-        .insert(CollisionProductionFactor {
-            id: collisionId,
-            instanceType: instanceType,
-            collisionType: CollisionType::Instance,
-            pos: Vec2::new(x, y),
-            width: width,
-            height: height,
-        });
+        .insert(InstanceTypeValue {
+            value: instanceType,
+        })
+        .insert(InstanceCampValue {
+            value: instanceCamp,
+        })
+        .insert(CollisionTypeValue {
+            value: CollisionType::Instance,
+        })
+        .insert(CollisionInput {
+            exclude: collisionExcludeFunction,
+            receiveId: collisionId,
+            shape: CollisionShape {
+                widthHalf: width / 2.0,
+                heightHalf: height / 2.0,
+                pos: Vec2::new(x, y),
+            },
+        })
+        .insert(CollisionResultArr { arr: vec![] });
+
     return collisionId;
 }
 
@@ -63,16 +81,27 @@ pub fn create_sta_collision(
         .insert(Name::new("staCollision"))
         // .insert(Visibility { is_visible: false })
         .id();
-    commands
-        .entity(collisionId)
-        .insert(CollisionProductionFactor {
-            id: collisionId,
-            instanceType: InstanceType::Wall,
-            collisionType: CollisionType::Static,
-            pos: Vec2::new(x, y),
-            width: width,
-            height: height,
-        });
+    // commands
+    //     .entity(collisionId)
+    //     // .insert(InstanceTypeValue {
+    //     //     value: instanceType,
+    //     // })
+    //     // .insert(InstanceCampValue {
+    //     //     value: instanceCamp,
+    //     // })
+    //     .insert(CollisionTypeValue {
+    //         value: CollisionType::Instance,
+    //     })
+    //     .insert(CollisionInput {
+    //         exclude: ,
+    //         receiveId: collisionId,
+    //         shape: CollisionShape {
+    //             widthHalf: width / 2.0,
+    //             heightHalf: height / 2.0,
+    //             pos: Vec2::new(x, y),
+    //         },
+    //     })
+    //     .insert(CollisionResultArr { arr: vec![] });
 
     return collisionId;
 }
@@ -80,7 +109,10 @@ pub fn create_sta_collision(
 pub fn create_scope_collision(
     commands: &mut Commands,
     parentId: Entity,
+
     instanceType: InstanceType,
+    instanceCamp: InstanceCamp,
+    collisionExcludeFunction: Option<fn(&InstanceType, &CollisionType, &InstanceCamp) -> bool>,
 
     x: f32,
     y: f32,
@@ -98,13 +130,25 @@ pub fn create_scope_collision(
 
     commands
         .entity(collisionId)
-        .insert(CollisionProductionFactor {
-            id: parentId,
-            instanceType: instanceType,
-            collisionType: CollisionType::Scope,
-            pos: Vec2::new(x, y),
-            width: width,
-            height: height,
-        });
+        .insert(InstanceTypeValue {
+            value: instanceType,
+        })
+        .insert(InstanceCampValue {
+            value: instanceCamp,
+        })
+        .insert(CollisionTypeValue {
+            value: CollisionType::Scope,
+        })
+        .insert(CollisionInput {
+            exclude: collisionExcludeFunction,
+            receiveId: parentId,
+            shape: CollisionShape {
+                widthHalf: width / 2.0,
+                heightHalf: height / 2.0,
+                pos: Vec2::new(x, y),
+            },
+        })
+        .insert(CollisionResultArr { arr: vec![] });
+
     return collisionId;
 }

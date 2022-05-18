@@ -13,7 +13,10 @@ use bevy_prototype_lyon::{
 use duckduckgeo::{self, ErrTooClose};
 use rand::{thread_rng, Rng};
 
-use crate::instance::InstanceType;
+use crate::instance::{
+    CollisionType, CollisionTypeValue, InstanceCamp, InstanceCampValue, InstanceType,
+    InstanceTypeValue,
+};
 use broccoli::{
     axgeom::Rect,
     tree::{
@@ -44,47 +47,37 @@ pub enum CollisionInner {
     },
 }
 
-#[derive(Clone, Debug, PartialEq, Copy, Hash, std::cmp::Eq)]
-pub enum CollisionType {
-    Static,
-    Scope,
-    Instance,
-}
 // 生产因子一般来源于需求，也就是消费者
 
+pub enum CollisionShapeType {
+    Rect,
+}
+
 #[derive(Component, Clone)]
-pub struct CollisionProductionFactor {
-    pub id: Entity,
-    pub collisionType: CollisionType,
-    pub instanceType: InstanceType,
+pub struct CollisionInput {
+    pub exclude: Option<fn(&InstanceType, &CollisionType, &InstanceCamp) -> bool>,
+    pub receiveId: Entity,
+    pub shape: CollisionShape,
+}
+
+#[derive(Component, Debug)]
+pub struct CollisionResultArr {
+    pub arr: Vec<CollisionResultItem>,
+}
+#[derive(Debug)]
+pub struct CollisionResultItem {
+    id: Entity,
+    collisionType: CollisionType,
+    instanceType: InstanceType,
+    instanceCamp: InstanceCamp,
+    shape: CollisionShape,
+}
+
+#[derive(Debug, Clone)]
+pub struct CollisionShape {
+    pub widthHalf: f32,
+    pub heightHalf: f32,
     pub pos: Vec2,
-
-    pub width: f32,
-    pub height: f32,
-    // pub is_accurate:bool
-}
-
-#[derive(Component, Clone, Debug)]
-pub struct CollisionDessert {
-    pub id: Entity,
-    // 后面这个需要改一下哈
-    pub collisionType: CollisionType,
-    pub instanceType: InstanceType,
-    pub pos: Vec2,
-    pub width: f32,
-    pub height: f32,
-}
-
-// 消费的是什么
-// 1.排斥力  2.静止进入 3.是否碰撞  2和3 可以合起来
-// 共同点是 卧槽了，这不就是形状坐标吗? 不是点 不是点.
-
-unsafe impl Send for CollisionEventMap {
-    //其中 X 保证永远不会在自身之外克隆 Rc，也不让结构的用户直接访问 Rc，也不将 Rc 存储在某个 thread_local 变量中。
-}
-pub struct CollisionEventMap {
-    // pub map: Arc<Mutex<HashMap<InstanceType, HashMap<Entity, Vec<CollisionDessert>>>>>,
-    pub map: HashMap<InstanceType, HashMap<Entity, Vec<CollisionDessert>>>,
 }
 
 pub struct CollisionPlugin;
@@ -93,14 +86,13 @@ impl Plugin for CollisionPlugin {
         // let map = Arc::new(Mutex::new(HashMap::new()));
         // app.insert_resource(CollisionEventMap { map: map.clone() });
 
-        app.insert_resource(CollisionEventMap {
-            map: HashMap::new(),
-        });
+        // app.insert_resource(Msaa { samples: 4 })
+        //     // .add_event::<CollisionScopeEvent>()
+        //     .add_plugin(ShapePlugin)
+        //     .add_startup_system(startup);
 
-        app.insert_resource(Msaa { samples: 4 })
-            // .add_event::<CollisionScopeEvent>()
-            .add_plugin(ShapePlugin)
-            .add_startup_system(startup);
+        app.add_stage_before(CoreStage::Update, "collision", SystemStage::parallel())
+            .add_system_to_stage("collision", collision_step.exclusive_system());
     }
 }
 
@@ -112,60 +104,158 @@ fn startup(mut commands: Commands) {}
 // 感觉哈，只需要这里告诉我他们是否碰撞了, 然后他们自己在自己的step里面处理自己的碰撞就好了
 // snake_step 清空自己的碰撞事件(消费)  collision_step 接受碰撞(生产)
 // 1.我觉得应该在自己的step中同步自己的碰撞因子
-pub fn collision_step(
-    mut query: Query<(&GlobalTransform, &CollisionProductionFactor)>,
-    mut debugTable: ResMut<DebugTable>,
-    mut collisionEventMapStruct: ResMut<CollisionEventMap>,
-) {
+pub fn collision_step(world: &mut World) {
+    let mut debugTable = world.get_resource_mut::<DebugTable>();
+    let mut query = world.query::<(
+        Entity,
+        &GlobalTransform,
+        &InstanceTypeValue,
+        &CollisionTypeValue,
+        &InstanceCampValue,
+        &mut CollisionInput,
+        &mut CollisionResultArr,
+    )>();
+    let mut dynBots = vec![];
+
+    for (
+        entity,
+        globalTransform,
+        instanceType,
+        collisionType,
+        instanceCamp,
+        mut collisionInput,
+        mut collisionResultArr,
+    ) in query.iter_mut(world)
+    {
+        collisionInput.shape.pos = globalTransform.translation.xy();
+        let shape = &collisionInput.shape;
+        let rect = Rect::new(
+            shape.pos.x - shape.widthHalf,
+            shape.pos.x + shape.widthHalf,
+            shape.pos.y - shape.heightHalf,
+            shape.pos.y + shape.heightHalf,
+        );
+        dynBots.push(bbox(
+            rect,
+            (
+                entity,
+                instanceType,
+                collisionType,
+                instanceCamp,
+                collisionInput,
+                collisionResultArr,
+            ),
+        ));
+    }
+
+    // 用于构建树
+    // let mut queryPart1 = world.query::<(&GlobalTransform, &mut CollisionInput)>();
+
+    let mut tree = broccoli::Tree::par_new(&mut dynBots);
+
+    tree.par_find_colliding_pairs(|a, b| {
+        let aBot = a.unpack_inner();
+        let bBot = b.unpack_inner();
+        let (
+            aEntity,
+            aInstanceTypeValue,
+            aCollisionTypeValue,
+            aInstanceCampValue,
+            aCollisionInput,
+            aCollisionResultArr,
+        ) = aBot;
+
+        let (
+            bEntity,
+            bInstanceTypeValue,
+            bCollisionTypeValue,
+            bInstanceCampValue,
+            bCollisionInput,
+            bCollisionResultArr,
+        ) = bBot;
+
+        // aCollisionResultArr.arr.push(CollisionResultItem {
+        //     shape: bCollisionInput.shape.clone(),
+        //     id: bEntity.clone(),
+        //     collisionType: bCollisionTypeValue.value.clone(),
+        //     instanceType: bInstanceTypeValue.value.clone(),
+        //     instanceCamp: bInstanceCampValue.value.clone(),
+        // });
+
+        // aCollisionResultArr.arr.push(CollisionResultItem {
+        //     shape: aCollisionInput.shape.clone(),
+        //     id: aEntity.clone(),
+        //     collisionType: aCollisionTypeValue.value.clone(),
+        //     instanceType: aInstanceTypeValue.value.clone(),
+        //     instanceCamp: aInstanceCampValue.value.clone(),
+        // });
+    });
+    // let mut setResultQuery = world.query::<(&mut CollisionResultArr)>();
+    // for (
+    //     entity,
+    //     globalTransform,
+    //     instanceType,
+    //     collisionType,
+    //     InstanceCamp,
+    //     collisionInput,
+    //     mut collisionResult,
+    // ) in query.iter_mut(&mut world)
+    // {}
+    // let mut newCollisionProductionFactor = collisionProductionFactor.clone();
+    // newCollisionProductionFactor.pos = globalTransform.translation.xy();
+
+    // mut query: Query<(&GlobalTransform, &CollisionProductionFactor)>,
+    // mut debugTable: ResMut<DebugTable>,
+    // mut collisionEventMapStruct: ResMut<CollisionEventMap>,
     // let mut collisionEventMap = &mut collisionEventMapStruct.map;
     // let mut collisionEventMap=HashMap::new();
 
-    let mut staBots: Vec<_> = vec![];
+    // let mut staBots: Vec<_> = vec![];
 
-    let mut dynBots: Vec<_> = vec![];
-    for (globalTransform, collisionProductionFactor) in query.iter() {
-        let mut configWidth = collisionProductionFactor.width;
-        let mut configHeight = collisionProductionFactor.height;
-        let mut rect = Rect::new(
-            globalTransform.translation.x - configWidth / 2.,
-            globalTransform.translation.x + configWidth / 2.,
-            globalTransform.translation.y - configHeight / 2.,
-            globalTransform.translation.y + configHeight / 2.,
-        );
-        let collisionType = collisionProductionFactor.collisionType;
-        match collisionType {
-            CollisionType::Static => {
-                staBots.push(rect);
-            }
-            _ => {
-                let mut newCollisionProductionFactor = collisionProductionFactor.clone();
-                newCollisionProductionFactor.pos = globalTransform.translation.xy();
-                dynBots.push(bbox(rect, newCollisionProductionFactor));
-            }
-        }
-    }
+    // let mut dynBots: Vec<_> = vec![];
+    // for (globalTransform, collisionProductionFactor) in query.iter() {
+    //     let mut configWidth = collisionProductionFactor.width;
+    //     let mut configHeight = collisionProductionFactor.height;
+    //     let mut rect = Rect::new(
+    //         globalTransform.translation.x - configWidth / 2.,
+    //         globalTransform.translation.x + configWidth / 2.,
+    //         globalTransform.translation.y - configHeight / 2.,
+    //         globalTransform.translation.y + configHeight / 2.,
+    //     );
+    //     let collisionType = collisionProductionFactor.collisionType;
+    //     match collisionType {
+    //         CollisionType::Static => {
+    //             staBots.push(rect);
+    //         }
+    //         _ => {
+    //             let mut newCollisionProductionFactor = collisionProductionFactor.clone();
+    //             newCollisionProductionFactor.pos = globalTransform.translation.xy();
+    //             dynBots.push(bbox(rect, newCollisionProductionFactor));
+    //         }
+    //     }
+    // }
 
-    #[cfg(debug_assertions)]
-    {
-        debugTable.collisionCount = Some(dynBots.len());
-    }
+    // #[cfg(debug_assertions)]
+    // {
+    //     debugTable.collisionCount = Some(dynBots.len());
+    // }
 
-    let mut tree = broccoli::Tree::par_new(&mut dynBots);
-    // let map: Arc<DashMap<String, String>> = Arc::new(DashMap::new())
-    let map: DashMap<u16, String> = DashMap::new();
-    unsafe {
-        // let counter = Arc::new(Mutex::new(1));
-        tree.par_find_colliding_pairs(|a, b| {
-            // let newMap = Arc::clone(&map);
-            // println!("counter:{:?}", counter);
-            // let newCounter = Arc::clone(&counter);
-            // let mut newCounter = counter.lock().unwrap();
-            // *newCounter += 1;
-            let mut rng = thread_rng();
+    // let mut tree = broccoli::Tree::par_new(&mut dynBots);
+    // // let map: Arc<DashMap<String, String>> = Arc::new(DashMap::new())
+    // let map: DashMap<u16, String> = DashMap::new();
+    // unsafe {
+    //     // let counter = Arc::new(Mutex::new(1));
+    //     tree.par_find_colliding_pairs(|a, b| {
+    //         // let newMap = Arc::clone(&map);
+    //         // println!("counter:{:?}", counter);
+    //         // let newCounter = Arc::clone(&counter);
+    //         // let mut newCounter = counter.lock().unwrap();
+    //         // *newCounter += 1;
+    //         let mut rng = thread_rng();
 
-            map.insert(rng.gen::<u16>(), "hello".to_string());
-        });
-    }
+    //         map.insert(rng.gen::<u16>(), "hello".to_string());
+    //     });
+    // }
 
     // let mut collisionEventMap = tree.par_find_colliding_pairs_acc(
     //     HashMap::new(),
@@ -255,27 +345,27 @@ pub fn repel(bots: [(&mut Vec2, &mut Vec2); 2], closest: f32, mag: f32) -> Resul
 
 // fn handle_collision(a: &mut Mut<CollisionBot>, b: &mut Mut<CollisionBot>) {}
 
-fn add_collision_event(
-    collisionEventMap: &mut HashMap<InstanceType, HashMap<Entity, Vec<CollisionDessert>>>,
-    instanceType: InstanceType,
-    id: Entity,
-    dessert: CollisionDessert,
-) {
-    if let Some(curEventMap) = collisionEventMap.get_mut(&instanceType) {
-        if let Some(curEventVec) = curEventMap.get_mut(&id) {
-            curEventVec.push(dessert);
-        } else {
-            curEventMap.insert(id, vec![dessert]);
-        }
-    } else {
-        let mut curEventMap = HashMap::new();
-        collisionEventMap.insert(instanceType, curEventMap);
-        if let Some(curEventMap) = collisionEventMap.get_mut(&instanceType) {
-            if let Some(curEventVec) = curEventMap.get_mut(&id) {
-                curEventVec.push(dessert);
-            } else {
-                curEventMap.insert(id, vec![dessert]);
-            }
-        }
-    }
-}
+// fn add_collision_event(
+//     collisionEventMap: &mut HashMap<InstanceType, HashMap<Entity, Vec<CollisionDessert>>>,
+//     instanceType: InstanceType,
+//     id: Entity,
+//     dessert: CollisionDessert,
+// ) {
+//     if let Some(curEventMap) = collisionEventMap.get_mut(&instanceType) {
+//         if let Some(curEventVec) = curEventMap.get_mut(&id) {
+//             curEventVec.push(dessert);
+//         } else {
+//             curEventMap.insert(id, vec![dessert]);
+//         }
+//     } else {
+//         let mut curEventMap = HashMap::new();
+//         collisionEventMap.insert(instanceType, curEventMap);
+//         if let Some(curEventMap) = collisionEventMap.get_mut(&instanceType) {
+//             if let Some(curEventVec) = curEventMap.get_mut(&id) {
+//                 curEventVec.push(dessert);
+//             } else {
+//                 curEventMap.insert(id, vec![dessert]);
+//             }
+//         }
+//     }
+// }

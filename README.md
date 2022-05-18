@@ -42,6 +42,8 @@ https://github.com/jcornaz/impacted
 
 初步系统已经建成
 
+6.3 碰撞性能优化成功，里程碑0.2
+
 7. ui试点
 https://github.com/mvlabat/bevy_egui.git
 7.1 按M呼出菜单
@@ -103,7 +105,7 @@ bevy_ecs_ldtk= "0.3.0" 性能也有点烂
 解决办法:镜头移动快速点 小于一定值直接等于
 2. 碰撞抖动问题(done)
 
-3. 命名改造(P0 todo)
+3. 命名改造(P0 done)
 实例的children 有动画 阴影 范围
 主体包括  碰撞  ai  属性  动画实例索引  
 
@@ -128,7 +130,7 @@ cargo run --features bevy/trace_chrome
 
 
 
-# 性能现状
+# 性能现状 0
 1w 可以用实例
 2w 碰撞检测
 有42到47帧数左右
@@ -150,6 +152,17 @@ only snake_step
 10000:100
 20000:54
 优化手段是什么呢？
+
+完美优化成功 里程碑达到
+
+# 性能现状 0.1
+无内存泄露
+20000sprite
+20000collision
+70-90帧数
+40000sprite
+40000collision
+37-43
 
 
 
