@@ -1,9 +1,10 @@
-use crate::systems::collision::{CollisionInput, CollisionResultArr, CollisionShape};
+use crate::systems::collision::{
+    CollisionExcludeFunction, CollisionInput, CollisionResultArr, CollisionShape,
+};
 use crate::systems::instance::InstanceCollisionTag;
 use crate::utils::num::y_to_z;
 use bevy::math::Vec2;
 use bevy::prelude::*;
-use bevy_prototype_lyon::prelude::*;
 
 use super::{
     CollisionType, CollisionTypeValue, InstanceCamp, InstanceCampValue, InstanceType,
@@ -14,7 +15,7 @@ pub fn create_instance_collision(
     commands: &mut Commands,
     instanceType: InstanceType,
     instanceCamp: InstanceCamp,
-    collisionExcludeFunction: Option<fn(&InstanceType, &CollisionType, &InstanceCamp) -> bool>,
+    collisionExcludeFunction: Option<CollisionExcludeFunction>,
 
     x: f32,
     y: f32,
@@ -81,27 +82,6 @@ pub fn create_sta_collision(
         .insert(Name::new("staCollision"))
         // .insert(Visibility { is_visible: false })
         .id();
-    // commands
-    //     .entity(collisionId)
-    //     // .insert(InstanceTypeValue {
-    //     //     value: instanceType,
-    //     // })
-    //     // .insert(InstanceCampValue {
-    //     //     value: instanceCamp,
-    //     // })
-    //     .insert(CollisionTypeValue {
-    //         value: CollisionType::Instance,
-    //     })
-    //     .insert(CollisionInput {
-    //         exclude: ,
-    //         receiveId: collisionId,
-    //         shape: CollisionShape {
-    //             widthHalf: width / 2.0,
-    //             heightHalf: height / 2.0,
-    //             pos: Vec2::new(x, y),
-    //         },
-    //     })
-    //     .insert(CollisionResultArr { arr: vec![] });
 
     return collisionId;
 }
@@ -112,7 +92,7 @@ pub fn create_scope_collision(
 
     instanceType: InstanceType,
     instanceCamp: InstanceCamp,
-    collisionExcludeFunction: Option<fn(&InstanceType, &CollisionType, &InstanceCamp) -> bool>,
+    collisionExcludeFunction: Option<CollisionExcludeFunction>,
 
     x: f32,
     y: f32,

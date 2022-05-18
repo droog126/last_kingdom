@@ -12,8 +12,6 @@ use crate::{
 
 use self::shadow::ShadowPlugin;
 
-use super::collision::collision_step;
-
 pub struct InstancePlugin;
 impl Plugin for InstancePlugin {
     fn build(&self, app: &mut App) {
