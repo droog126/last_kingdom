@@ -1,4 +1,4 @@
-use bevy::{prelude::Component, sprite::collide_aabb::Collision};
+use bevy::prelude::Component;
 
 pub mod player;
 pub mod snake;
@@ -26,12 +26,6 @@ pub enum CollisionType {
     Static,
     Scope,
     Instance,
-}
-
-#[derive(Component, Debug, Clone)]
-pub struct InstanceCategory {
-    pub type_: InstanceType,
-    pub camp: InstanceCamp,
 }
 
 #[derive(Component, Debug, Clone)]

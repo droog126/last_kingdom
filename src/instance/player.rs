@@ -1,15 +1,17 @@
 use crate::instance::utils::create_instance_collision;
-use crate::instance::{InstanceCamp, InstanceCategory, InstanceType};
+use crate::instance::{InstanceCamp, InstanceType};
 use crate::state::loading::SpriteCenter;
-use crate::systems::collision::{CollisionID, CollisionResultArr};
+use crate::systems::collision::{CollisionResultArr, _repel};
 use crate::systems::debug::DebugStatus;
 use crate::systems::input::InsInput;
 use crate::systems::instance::shadow::ShadowAsset;
-use crate::systems::instance::InstanceCollisionTag;
 use crate::systems::stateMachine::{AnimationState, StateChangeEvt, StateInfo, StateMachine};
+use bevy::math::Vec3Swizzles;
 use bevy_prototype_lyon::prelude::*;
 
 use bevy::prelude::*;
+
+use super::CollisionType;
 
 // res
 pub struct GLobalPlayerID(pub Entity);
@@ -44,6 +46,17 @@ fn getPlayerSprite(animationState: &AnimationState) -> StateInfo {
             endIndex: 0,
             spriteName: "player".to_string(),
         },
+    }
+}
+fn playerCollisionExclude(
+    instanceType: &InstanceType,
+    collisionType: &CollisionType,
+    instanceCamp: &InstanceCamp,
+) -> bool {
+    if (collisionType == &CollisionType::Instance) {
+        false
+    } else {
+        true
     }
 }
 
@@ -106,11 +119,11 @@ pub fn player_create(
             origin: RectangleOrigin::Center,
         };
 
-        let collisionId = create_instance_collision(
+        let instanceId = create_instance_collision(
             &mut commands,
             InstanceType::Player,
             InstanceCamp::Friendly,
-            None,
+            Some(playerCollisionExclude),
             0.0,
             0.0,
             20.0,
@@ -122,11 +135,7 @@ pub fn player_create(
 
         // 实体后置添加
         commands
-            .entity(collisionId)
-            .insert(InstanceCategory {
-                type_: InstanceType::Player,
-                camp: InstanceCamp::Neutral,
-            })
+            .entity(instanceId)
             .insert(PlayerProps { spd: 200.0 })
             .insert(InsInput {
                 ..Default::default()
@@ -135,7 +144,7 @@ pub fn player_create(
             .insert(Name::new("player"))
             .push_children(&[animationInstanceId, shadowId]);
 
-        commands.insert_resource(GLobalPlayerID(collisionId));
+        commands.insert_resource(GLobalPlayerID(instanceId));
     }
 }
 
@@ -180,10 +189,18 @@ pub fn player_step(
             nextLen.y = input.dir.y * props.spd * time.delta_seconds();
         }
 
+        // println!("看看当前碰撞结果{:?}", collisionResultArr);
+        for collisionItem in collisionResultArr.arr.iter() {
+            nextLen += _repel(
+                &trans.translation.xy(),
+                &collisionItem.shape.pos,
+                None,
+                None,
+            )
+        }
+        collisionResultArr.arr.clear();
+
         trans.translation.x += nextLen.x;
         trans.translation.y += nextLen.y;
-
-        // println!("看看当前碰撞结果{:?}", collisionResultArr);
-        collisionResultArr.arr.clear();
     }
 }

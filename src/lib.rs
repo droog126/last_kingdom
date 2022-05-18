@@ -15,9 +15,9 @@ use state::menu::MenuPlugin;
 use state::playing::PlayingPlugin;
 use state::GameState;
 
+use bevy::app::App;
 use bevy::app::Plugin;
 use bevy::prelude::*;
-use bevy::{app::App, diagnostic::FrameTimeDiagnosticsPlugin};
 pub struct GamePlugin;
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {

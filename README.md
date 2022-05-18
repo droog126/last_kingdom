@@ -1,5 +1,6 @@
 ### P0
 1.  完成碰撞规则实装
+2.  完成碰撞效果s
 2.  重写怪物Ai
 3.  人物需要增加脚下阴影
 
@@ -76,6 +77,13 @@ cargo run --features bevy/trace_chrome
 20000sprite 20000collision  = 70-90fps
 40000sprite 40000collision = 37-43fps
 
+20000sprite 20000collision 理想碰撞规则  =  66-78fps
+40000sprite 40000collision 理想碰撞规则  =  30-37fps
+
+20000sprite 20000collision 实际碰撞规则  =  66-78fps
+40000sprite 40000collision 实际碰撞规则  =  30-37fps
+
+
 
 ### 开发理念
 
@@ -95,7 +103,8 @@ cargo run --features bevy/trace_chrome
 
     生产者就需要提供自己的形状 作为生产者的 生产因子
 
-    生产者需要输入的，这个输入需要捋清楚所有线路，才会知道生产因子.
+    生产者需要输入的，这个输入需要捋清楚所有线路，才会知道生产因子。
+3. 如果需要不同类型的实例需要相互修改就放在 总线 或者是 并行总线 里去做，不要放在并行系统里搞。
 
 
 ### 历史

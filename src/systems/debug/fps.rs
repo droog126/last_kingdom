@@ -1,5 +1,5 @@
 use bevy::core::FixedTimestep;
-use bevy::diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
+use bevy::diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin};
 use bevy::prelude::*;
 
 use crate::state::GameState;

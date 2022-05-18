@@ -1,19 +1,17 @@
 use crate::state::loading::SpriteCenter;
-use crate::systems::collision::{CollisionID, CollisionResultArr};
+use crate::systems::collision::{CollisionResultArr, _repel};
 use crate::systems::debug::DebugStatus;
 use crate::systems::instance::shadow::ShadowAsset;
-use crate::systems::instance::InstanceCollisionTag;
-use crate::systems::stateMachine::{
-    AnimationInstanceId, AnimationState, StateChangeEvt, StateInfo, StateMachine,
-};
+use crate::systems::stateMachine::{AnimationState, StateChangeEvt, StateInfo, StateMachine};
 use crate::systems::timeLine::TimeLine;
 use crate::utils::random::{random_Vec2, random_in_unlimited, random_range};
+use bevy::math::Vec3Swizzles;
 use bevy::utils::HashMap;
 
 use bevy::prelude::*;
 
 use super::utils::{create_instance_collision, create_scope_collision};
-use super::{InstanceCamp, InstanceCategory, InstanceType};
+use super::{CollisionType, InstanceCamp, InstanceType};
 #[derive(Component)]
 pub struct SnakeTag;
 #[derive(Component)]
@@ -57,6 +55,29 @@ fn getSnakeSprite(animationState: &AnimationState) -> StateInfo {
         },
     }
 }
+fn snakeCollisionExclude(
+    instanceType: &InstanceType,
+    collisionType: &CollisionType,
+    instanceCamp: &InstanceCamp,
+) -> bool {
+    if (collisionType == &CollisionType::Instance) {
+        false
+    } else {
+        true
+    }
+}
+
+fn snakeScopeCollisionExclude(
+    instanceType: &InstanceType,
+    collisionType: &CollisionType,
+    instanceCamp: &InstanceCamp,
+) -> bool {
+    if (instanceType == &InstanceType::Player) {
+        false
+    } else {
+        true
+    }
+}
 
 pub fn snake_create_raw(
     mut commands: &mut Commands,
@@ -78,7 +99,7 @@ pub fn snake_create_raw(
         .id();
 
     // 人物实体
-    let instanceId = commands
+    let animationId = commands
         .spawn_bundle(SpriteSheetBundle {
             transform: Transform {
                 translation: Vec3::new(4.0, 14.0, 10.0),
@@ -93,11 +114,11 @@ pub fn snake_create_raw(
         .insert(SnakeAnimationTag)
         .id();
 
-    let collisionId = create_instance_collision(
+    let instanceId = create_instance_collision(
         &mut commands,
         InstanceType::Snake,
         InstanceCamp::Hostile,
-        None,
+        Some(snakeCollisionExclude),
         x,
         y,
         20.0,
@@ -105,34 +126,26 @@ pub fn snake_create_raw(
     );
     let scopeCollisionId = create_scope_collision(
         &mut commands,
-        collisionId,
+        instanceId,
         InstanceType::Snake,
         InstanceCamp::Hostile,
-        None,
+        Some(snakeScopeCollisionExclude),
         0.0,
         0.0,
         100.0,
         100.0,
     );
 
-    // player后置添加
-    commands.entity(instanceId).insert(CollisionID(collisionId));
-
-    // collision后置添加
+    // instance后置添加
     commands
-        .entity(collisionId)
+        .entity(instanceId)
         .insert(Name::new("snake"))
         .insert(SnakeTag)
-        .insert(InstanceCategory {
-            type_: InstanceType::Snake,
-            camp: InstanceCamp::Hostile,
-        })
         .insert(SnakeAi {
             target: None,
             state: AiState::daze,
         })
-        .insert(AnimationInstanceId(instanceId))
-        .push_children(&[instanceId, shadowId, scopeCollisionId]);
+        .push_children(&[animationId, shadowId, scopeCollisionId]);
 
     commands.entity(scopeCollisionId).insert(SnakeScopeTag);
 }
@@ -143,21 +156,45 @@ pub fn snake_step(
     mut changeStateEvent: EventWriter<StateChangeEvt>,
     debugStatus: Res<DebugStatus>,
     mut set: ParamSet<(
-        Query<(&mut Transform, &mut CollisionResultArr, &mut SnakeAi), With<SnakeTag>>,
+        Query<
+            (
+                Entity,
+                &mut Transform,
+                &mut CollisionResultArr,
+                &mut SnakeAi,
+            ),
+            With<SnakeTag>,
+        >,
         Query<&mut CollisionResultArr, With<SnakeScopeTag>>,
     )>,
     timeLine: Res<TimeLine>,
 ) {
     let mut instanceQuery = set.p0();
-    for (mut transform, mut collisionResultArr, mut snakeAi) in instanceQuery.iter_mut() {
+    for (entity, mut trans, mut collisionResultArr, mut snakeAi) in instanceQuery.iter_mut() {
+        let mut nextLen = Vec2::splat(0.0);
+        for collisionItem in collisionResultArr.arr.iter() {
+            nextLen += _repel(
+                &trans.translation.xy(),
+                &collisionItem.shape.pos,
+                None,
+                None,
+            )
+        }
+        // if collisionResultArr.arr.len() > 0 {
+        //     println!("{:?}what happen? {:?}", entity, collisionResultArr);
+        // }
         collisionResultArr.arr.clear();
+        trans.translation.x += nextLen.x;
+        trans.translation.y += nextLen.y;
     }
 
     let mut scopeQuery = set.p1();
     for (mut collisionResultArr) in scopeQuery.iter_mut() {
+        // 按道理来说这个捕获的都给snake了需要验证下
         collisionResultArr.arr.clear();
     }
     return;
+
     // let timeLineRaw = timeLine.0;
     // let mut query = set.p0();
     // let mut snakeScopeOtherMap = HashMap::new();

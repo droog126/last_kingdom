@@ -16,11 +16,6 @@ impl Default for StateMachine {
     }
 }
 
-// 和struct相关的函数闭包需求就挂在这个struct的trait上
-
-#[derive(Component)]
-pub struct AnimationInstanceId(pub Entity);
-
 #[derive(Debug)]
 pub struct StateInfo {
     pub startIndex: usize,
