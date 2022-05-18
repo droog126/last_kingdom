@@ -40,7 +40,7 @@ broccoli = "4.1.1"
 # duckduckgeo = "0.4.2"
 
 # 优化结构体
-dashmap="5.3.3"
+# dashmap="5.3.3"
 
 
 # [dependencies.bevy_asset_loader_derive]
@@ -56,10 +56,8 @@ opt-level = 3
 [profile.dev]
 opt-level = 1
 
-#[profile.release]
-#lto = "thin"
-#codegen-units = 1
+[profile.release]
+lto = "thin"
+codegen-units = 1
 
 
-# [profile.release]
-# codegen-units = 1
