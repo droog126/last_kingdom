@@ -1,4 +1,4 @@
-use crate::systems::{input::InsInput, stateMachine::InsState};
+use crate::systems::input::InsInput;
 use bevy::prelude::*;
 use bevy_inspector_egui::{Inspectable, RegisterInspectable, WorldInspectorPlugin};
 

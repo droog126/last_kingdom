@@ -1,12 +1,12 @@
 use crate::instance::utils::create_instance_collision;
 use crate::instance::{InstanceCamp, InstanceCategory, InstanceType};
 use crate::state::loading::SpriteCenter;
-use crate::systems::collision::CollisionID;
+use crate::systems::collision::{CollisionID, CollisionResultArr};
 use crate::systems::debug::DebugStatus;
 use crate::systems::input::InsInput;
 use crate::systems::instance::shadow::ShadowAsset;
 use crate::systems::instance::InstanceCollisionTag;
-use crate::systems::stateMachine::{InsState, StateChangeEvt, StateInfo, StateMachine};
+use crate::systems::stateMachine::{AnimationState, StateChangeEvt, StateInfo, StateMachine};
 use bevy_prototype_lyon::prelude::*;
 
 use bevy::prelude::*;
@@ -16,7 +16,7 @@ pub struct GLobalPlayerID(pub Entity);
 
 //component
 #[derive(Component)]
-pub struct PlayerTag;
+pub struct PlayerAnimationTag;
 
 #[derive(Component, Debug)]
 // #[reflect(Component)]
@@ -25,10 +25,10 @@ pub struct PlayerProps {
 }
 
 #[derive(Component)]
-pub struct PlayerCollisionDynTag;
+pub struct PlayerTag;
 
-fn getPlayerSprite(insState: &InsState) -> StateInfo {
-    match (insState.0) {
+fn getPlayerSprite(animationState: &AnimationState) -> StateInfo {
+    match (animationState.0) {
         StateMachine::Idle => StateInfo {
             startIndex: 0,
             endIndex: 0,
@@ -87,7 +87,7 @@ pub fn player_create(
             .id();
 
         // 人物实体
-        let instanceId = commands
+        let animationInstanceId = commands
             .spawn_bundle(SpriteSheetBundle {
                 transform: Transform {
                     translation: Vec3::new(0.0, 20.0, 10.0),
@@ -96,13 +96,9 @@ pub fn player_create(
                 texture_atlas: spriteCenter.0.get("player").unwrap().clone(),
                 ..Default::default()
             })
-            .insert(PlayerProps { spd: 200.0 })
-            .insert(InsInput {
-                ..Default::default()
-            })
-            .insert(InsState(StateMachine::Idle, 1.0, getPlayerSprite))
-            .insert(Name::new("player".to_string()))
-            .insert(PlayerTag)
+            .insert(AnimationState(StateMachine::Idle, 1.0, getPlayerSprite))
+            .insert(Name::new("playerAnimation".to_string()))
+            .insert(PlayerAnimationTag)
             .id();
 
         let shape = shapes::Rectangle {
@@ -110,33 +106,51 @@ pub fn player_create(
             origin: RectangleOrigin::Center,
         };
 
-        let collisionId =
-            create_instance_collision(&mut commands, InstanceType::Player, 0.0, 0.0, 20.0, 10.0);
+        let collisionId = create_instance_collision(
+            &mut commands,
+            InstanceType::Player,
+            InstanceCamp::Friendly,
+            None,
+            0.0,
+            0.0,
+            20.0,
+            10.0,
+        );
 
-        // player后置添加
-        commands.entity(instanceId).insert(CollisionID(collisionId));
-        // collisionId后置添加
+        // animation后置添加
+        commands.entity(animationInstanceId);
 
+        // 实体后置添加
         commands
             .entity(collisionId)
-            .insert(Name::new("playerCollision"))
-            .insert(PlayerCollisionDynTag)
             .insert(InstanceCategory {
                 type_: InstanceType::Player,
                 camp: InstanceCamp::Neutral,
             })
-            .push_children(&[instanceId, shadowId]);
+            .insert(PlayerProps { spd: 200.0 })
+            .insert(InsInput {
+                ..Default::default()
+            })
+            .insert(PlayerTag)
+            .insert(Name::new("player"))
+            .push_children(&[animationInstanceId, shadowId]);
 
-        commands.insert_resource(GLobalPlayerID(instanceId));
+        commands.insert_resource(GLobalPlayerID(collisionId));
     }
 }
 
 pub fn player_step(
     time: Res<Time>,
-    mut set: ParamSet<(
-        Query<(Entity, &mut Transform, &PlayerProps, &InsInput), With<PlayerTag>>,
-        Query<(&mut Transform), With<PlayerCollisionDynTag>>,
-    )>,
+    mut query: Query<
+        (
+            &mut Transform,
+            &PlayerProps,
+            &InsInput,
+            &mut CollisionResultArr,
+            &Children,
+        ),
+        With<PlayerTag>,
+    >,
 
     mut changeStateEvent: EventWriter<StateChangeEvt>,
     debugStatus: Res<DebugStatus>,
@@ -145,32 +159,31 @@ pub fn player_step(
     if debugStatus.camera_debug {
         return;
     }
-    let mut playerQuery = set.p0();
 
     let mut nextLen = Vec2::splat(0.0);
 
-    for (entity, mut trans, props, input) in playerQuery.iter_mut() {
+    for (mut trans, props, input, mut collisionResultArr, children) in query.iter_mut() {
+        let animationInstanceId = children[0];
         if input.dir.length() == 0.0 {
             changeStateEvent.send(StateChangeEvt {
-                ins: entity,
+                ins: animationInstanceId,
                 newState: StateMachine::Idle,
                 xDir: input.dir.x,
             });
         } else {
             changeStateEvent.send(StateChangeEvt {
-                ins: entity,
+                ins: animationInstanceId,
                 newState: StateMachine::Walk,
                 xDir: input.dir.x,
             });
             nextLen.x = input.dir.x * props.spd * time.delta_seconds();
             nextLen.y = input.dir.y * props.spd * time.delta_seconds();
         }
-    }
 
-    let mut collisionQuery = set.p1();
+        trans.translation.x += nextLen.x;
+        trans.translation.y += nextLen.y;
 
-    for mut transform in collisionQuery.iter_mut() {
-        transform.translation.x += nextLen.x;
-        transform.translation.y += nextLen.y;
+        // println!("看看当前碰撞结果{:?}", collisionResultArr);
+        collisionResultArr.arr.clear();
     }
 }

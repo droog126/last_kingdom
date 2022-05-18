@@ -21,11 +21,9 @@ impl Plugin for InstancePlugin {
             .add_system_set(SystemSet::on_enter(GameState::Playing).with_system(player_create))
             .add_system_set(
                 SystemSet::on_update(GameState::Playing)
-                    .with_system(player_step.before(collision_step))
-                    // .with_system(snake_step.before(collision_step))
-                    .with_system(z_depth_step)
-                    .with_system(collision_step),
-                // .with_system(snake_collisionScope_event.after(collision_step)),
+                    .with_system(player_step)
+                    .with_system(snake_step)
+                    .with_system(z_depth_step),
             );
     }
 }

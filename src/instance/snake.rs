@@ -1,10 +1,10 @@
 use crate::state::loading::SpriteCenter;
-use crate::systems::collision::CollisionID;
+use crate::systems::collision::{CollisionID, CollisionResultArr};
 use crate::systems::debug::DebugStatus;
 use crate::systems::instance::shadow::ShadowAsset;
 use crate::systems::instance::InstanceCollisionTag;
 use crate::systems::stateMachine::{
-    AnimationInstanceId, InsState, StateChangeEvt, StateInfo, StateMachine,
+    AnimationInstanceId, AnimationState, StateChangeEvt, StateInfo, StateMachine,
 };
 use crate::systems::timeLine::TimeLine;
 use crate::utils::random::{random_Vec2, random_in_unlimited, random_range};
@@ -14,19 +14,17 @@ use bevy::prelude::*;
 
 use super::utils::{create_instance_collision, create_scope_collision};
 use super::{InstanceCamp, InstanceCategory, InstanceType};
-
 #[derive(Component)]
 pub struct SnakeTag;
+#[derive(Component)]
+pub struct SnakeAnimationTag;
+#[derive(Component, Debug)]
+pub struct SnakeScopeTag;
 
 #[derive(Component, Debug)]
 pub struct SnakeProps {
     pub spd: f32,
 }
-#[derive(Component)]
-pub struct SnakeCollisionTag;
-
-#[derive(Component, Debug)]
-pub struct SnakeScopeCollisionTag;
 
 #[derive(Component, Debug)]
 pub struct SnakeAi {
@@ -40,8 +38,8 @@ enum AiState {
     daze,
 }
 
-fn getSnakeSprite(insState: &InsState) -> StateInfo {
-    match (insState.0) {
+fn getSnakeSprite(animationState: &AnimationState) -> StateInfo {
+    match (animationState.0) {
         StateMachine::Idle => StateInfo {
             startIndex: 0,
             endIndex: 7,
@@ -90,17 +88,27 @@ pub fn snake_create_raw(
             ..Default::default()
         })
         .insert(SnakeProps { spd: 200.0 })
-        .insert(InsState(StateMachine::Idle, 1.0, getSnakeSprite))
+        .insert(AnimationState(StateMachine::Idle, 1.0, getSnakeSprite))
         .insert(Name::new("snake".to_string()))
-        .insert(SnakeTag)
+        .insert(SnakeAnimationTag)
         .id();
 
-    let collisionId =
-        create_instance_collision(&mut commands, InstanceType::Snake, x, y, 20.0, 10.0);
+    let collisionId = create_instance_collision(
+        &mut commands,
+        InstanceType::Snake,
+        InstanceCamp::Hostile,
+        None,
+        x,
+        y,
+        20.0,
+        10.0,
+    );
     let scopeCollisionId = create_scope_collision(
         &mut commands,
         collisionId,
         InstanceType::Snake,
+        InstanceCamp::Hostile,
+        None,
         0.0,
         0.0,
         100.0,
@@ -113,8 +121,8 @@ pub fn snake_create_raw(
     // collision后置添加
     commands
         .entity(collisionId)
-        .insert(Name::new("snakeCollision"))
-        .insert(SnakeCollisionTag)
+        .insert(Name::new("snake"))
+        .insert(SnakeTag)
         .insert(InstanceCategory {
             type_: InstanceType::Snake,
             camp: InstanceCamp::Hostile,
@@ -126,9 +134,7 @@ pub fn snake_create_raw(
         .insert(AnimationInstanceId(instanceId))
         .push_children(&[instanceId, shadowId, scopeCollisionId]);
 
-    commands
-        .entity(scopeCollisionId)
-        .insert(SnakeScopeCollisionTag);
+    commands.entity(scopeCollisionId).insert(SnakeScopeTag);
 }
 
 // 运行限制条件，snake确实存在  可能需要一张表来维护
@@ -137,11 +143,20 @@ pub fn snake_step(
     mut changeStateEvent: EventWriter<StateChangeEvt>,
     debugStatus: Res<DebugStatus>,
     mut set: ParamSet<(
-        Query<(&Transform, &InstanceCategory), With<InstanceCollisionTag>>,
-        Query<(&mut Transform, &mut SnakeAi, &AnimationInstanceId), With<SnakeCollisionTag>>,
+        Query<(&mut Transform, &mut CollisionResultArr, &mut SnakeAi), With<SnakeTag>>,
+        Query<&mut CollisionResultArr, With<SnakeScopeTag>>,
     )>,
     timeLine: Res<TimeLine>,
 ) {
+    let mut instanceQuery = set.p0();
+    for (mut transform, mut collisionResultArr, mut snakeAi) in instanceQuery.iter_mut() {
+        collisionResultArr.arr.clear();
+    }
+
+    let mut scopeQuery = set.p1();
+    for (mut collisionResultArr) in scopeQuery.iter_mut() {
+        collisionResultArr.arr.clear();
+    }
     return;
     // let timeLineRaw = timeLine.0;
     // let mut query = set.p0();
