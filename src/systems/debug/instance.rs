@@ -22,44 +22,44 @@ fn step(
     cursorPosition: Res<CursorPosition>,
     debugStatus: Res<DebugStatus>,
 
-    mut spriteCenter: ResMut<SpriteCenter>,
-    mut shadowHandle: ResMut<ShadowAsset>,
+    spriteCenter: Res<SpriteCenter>,
+    shadowHandle: Res<ShadowAsset>,
 ) {
     if (!debugStatus.instance_debug) {
         return;
     }
     if (mouseInput.just_pressed(MouseButton::Left)) {
-        // snake_create_raw(
-        //     &mut commands,
-        //     &mut spriteCenter,
-        //     &mut shadowHandle,
-        //     cursorPosition.x,
-        //     cursorPosition.y,
-        // );
+        snake_create_raw(
+            &mut commands,
+            spriteCenter,
+            shadowHandle,
+            cursorPosition.x,
+            cursorPosition.y,
+        );
         println!("create snake{:?}", cursorPosition);
-        for _ in 0..10000 {
-            snake_create_raw(
-                &mut commands,
-                &mut spriteCenter,
-                &mut shadowHandle,
-                cursorPosition.x + random_range(-1000.0, 1000.0),
-                cursorPosition.y + random_range(-1000.0, 1000.0),
-            );
-        }
+        // for _ in 0..10000 {
+        //     snake_create_raw(
+        //         &mut commands,
+        //         &mut spriteCenter,
+        //         &mut shadowHandle,
+        //         cursorPosition.x + random_range(-1000.0, 1000.0),
+        //         cursorPosition.y + random_range(-1000.0, 1000.0),
+        //     );
+        // }
     }
 
-    if mouseInput.just_pressed(MouseButton::Right) {
-        let mut ids = random_arr4(1000, 1000, 100, 100)
-            .take(2)
-            .map(|[x, y, width, height]| {
-                create_sta_collision(
-                    &mut commands,
-                    x as f32,
-                    y as f32,
-                    width as f32,
-                    height as f32,
-                )
-            })
-            .collect::<Vec<_>>();
-    }
+    // if mouseInput.just_pressed(MouseButton::Right) {
+    //     let mut ids = random_arr4(1000, 1000, 100, 100)
+    //         .take(2)
+    //         .map(|[x, y, width, height]| {
+    //             create_sta_collision(
+    //                 &mut commands,
+    //                 x as f32,
+    //                 y as f32,
+    //                 width as f32,
+    //                 height as f32,
+    //             )
+    //         })
+    //         .collect::<Vec<_>>();
+    // }
 }

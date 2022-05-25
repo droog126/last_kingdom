@@ -45,7 +45,7 @@ pub type CollisionExcludeFunction = fn(&InstanceType, &CollisionType, &InstanceC
 pub struct CollisionResultArr {
     pub arr: Vec<CollisionResultItem>,
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct CollisionResultItem {
     id: Entity,
     collisionType: CollisionType,
