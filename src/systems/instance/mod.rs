@@ -1,5 +1,3 @@
-pub mod shadow;
-
 use bevy::prelude::*;
 
 use crate::{
@@ -10,13 +8,10 @@ use crate::{
     state::GameState,
 };
 
-use self::shadow::ShadowPlugin;
-
 pub struct InstancePlugin;
 impl Plugin for InstancePlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugin(ShadowPlugin)
-            .add_system_set(SystemSet::on_enter(GameState::Playing).with_system(player_create))
+        app.add_system_set(SystemSet::on_enter(GameState::Playing).with_system(player_create))
             .add_system_set(
                 SystemSet::on_update(GameState::Playing)
                     .with_system(player_step)

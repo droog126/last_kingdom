@@ -1,7 +1,6 @@
-use crate::state::loading::SpriteCenter;
+use crate::state::loading::{ImageCenter, TextureAtlasCenter};
 use crate::systems::collision::{CollisionResultArr, _repel};
 use crate::systems::debug::DebugStatus;
-use crate::systems::instance::shadow::ShadowAsset;
 use crate::systems::stateMachine::{AnimationState, StateChangeEvt, StateInfo, StateMachine};
 use crate::systems::timeLine::TimeLine;
 use crate::utils::random::{random_Vec2, random_in_unlimited, random_range};
@@ -86,15 +85,15 @@ fn snakeScopeCollisionExclude(
 
 pub fn snake_create_raw(
     mut commands: &mut Commands,
-    spriteCenter: Res<SpriteCenter>,
-    shadowHandle: Res<ShadowAsset>,
+    textureAtlasCenter: Res<TextureAtlasCenter>,
+    imageCenter: Res<ImageCenter>,
     x: f32,
     y: f32,
 ) {
     // 阴影实体
     let shadowId = commands
         .spawn_bundle(SpriteBundle {
-            texture: shadowHandle.clone(),
+            texture: imageCenter.0.get("shadow").unwrap().clone(),
             transform: Transform {
                 scale: Vec3::new(1.0, 0.5, 0.0),
                 ..default()
@@ -110,7 +109,7 @@ pub fn snake_create_raw(
                 translation: Vec3::new(4.0, 14.0, 10.0),
                 ..Default::default()
             },
-            texture_atlas: spriteCenter.0.get("snake").unwrap().clone(),
+            texture_atlas: textureAtlasCenter.0.get("snake").unwrap().clone(),
             ..Default::default()
         })
         .insert(SnakeProps { spd: 200.0 })
@@ -159,8 +158,8 @@ pub fn snake_create_raw(
 // 运行限制条件，snake确实存在  可能需要一张表来维护
 pub fn snake_step(
     mut commands: Commands,
-    spriteCenter: Res<SpriteCenter>,
-    shadowHandle: Res<ShadowAsset>,
+    textureAtlasCenter: Res<TextureAtlasCenter>,
+    imageCenter: Res<ImageCenter>,
 
     time: Res<Time>,
     timeLine: Res<TimeLine>,
@@ -233,21 +232,21 @@ pub fn snake_step(
                     });
                 }
                 AiState::Attack { pos } => {
-                    create_attack_box(
-                        shadowHandle.clone(),
-                        spriteCenter.0.get("snake").unwrap().clone(),
-                        getSnakeSprite,
-                        &mut commands,
-                        "_snake",
-                        SnakeTag,
-                        InstanceType::Snake,
-                        InstanceCamp::Hostile,
-                        None,
-                        pos.x,
-                        pos.y,
-                        20.,
-                        20.,
-                    );
+                    // create_attack_box(
+                    //     shadowHandle.clone(),
+                    //     textureAtlasCenter.0.get("snake").unwrap().clone(),
+                    //     getSnakeSprite,
+                    //     &mut commands,
+                    //     "_snake",
+                    //     SnakeTag,
+                    //     InstanceType::Snake,
+                    //     InstanceCamp::Hostile,
+                    //     None,
+                    //     pos.x,
+                    //     pos.y,
+                    //     20.,
+                    //     20.,
+                    // );
                 }
             }
         } else {

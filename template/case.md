@@ -55,3 +55,23 @@ fn step(mut commands: Commands, query: Query<Entity, With<CollisionDynTag>>) {
 }
 
 ```
+
+
+// 创建一个攻击盒子 
+```rust
+create_attack_box(
+        shadowHandle.clone(),
+        textureAtlasCenter.0.get("snake").unwrap().clone(),
+        getSnakeSprite,
+        &mut commands,
+        "_snake",
+        SnakeTag,
+        InstanceType::Snake,
+        InstanceCamp::Hostile,
+        None,
+        pos.x,
+        pos.y,
+        20.,
+        20.,
+    );
+```
