@@ -1,8 +1,6 @@
-use crate::state::loading::SpriteCenter;
 use crate::systems::collision::{
     CollisionExcludeFunction, CollisionInput, CollisionResultArr, CollisionShape,
 };
-use crate::systems::instance::shadow::ShadowAsset;
 use crate::systems::instance::InstanceCollisionTag;
 use crate::systems::stateMachine::{AnimationState, StateInfo, StateMachine};
 use crate::utils::num::y_to_z;
@@ -136,7 +134,7 @@ pub fn create_scope_collision(
     return collisionId;
 }
 
-pub fn create_attack_box<T>(
+pub fn create_instance<T>(
     shadowImage: Handle<Image>,
     textureAtlas: Handle<TextureAtlas>,
     getSpriteIndex: fn(&AnimationState) -> StateInfo,
@@ -246,6 +244,56 @@ pub fn create_attack_free_box<T>(
         .insert(CollisionInput {
             exclude: collisionExcludeFunction,
             receiveId: parentId,
+            shape: CollisionShape {
+                widthHalf: width / 2.0,
+                heightHalf: height / 2.0,
+                pos: Vec2::new(x, y),
+            },
+        })
+        .insert(CollisionResultArr { arr: vec![] });
+
+    return collisionId;
+}
+
+pub fn create_attack_box(
+    commands: &mut Commands,
+    imageHandle: Handle<Image>,
+
+    instanceType: InstanceType,
+    instanceCamp: InstanceCamp,
+    collisionExcludeFunction: Option<CollisionExcludeFunction>,
+
+    x: f32,
+    y: f32,
+    width: f32,
+    height: f32,
+) -> Entity {
+    let collisionId = commands
+        .spawn()
+        .insert(GlobalTransform { ..default() })
+        .insert(Transform {
+            translation: Vec3::new(x, y, y_to_z(y)),
+            ..default()
+        })
+        .insert(Visibility { ..default() })
+        .insert(imageHandle)
+        .insert(Sprite { ..default() })
+        .id();
+
+    commands
+        .entity(collisionId)
+        .insert(InstanceTypeValue {
+            value: instanceType,
+        })
+        .insert(InstanceCampValue {
+            value: instanceCamp,
+        })
+        .insert(CollisionTypeValue {
+            value: CollisionType::Scope,
+        })
+        .insert(CollisionInput {
+            exclude: collisionExcludeFunction,
+            receiveId: collisionId,
             shape: CollisionShape {
                 widthHalf: width / 2.0,
                 heightHalf: height / 2.0,

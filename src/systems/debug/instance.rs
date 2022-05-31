@@ -2,9 +2,9 @@ use bevy::prelude::*;
 
 use crate::{
     instance::{snake::snake_create_raw, utils::create_sta_collision},
+    state::loading::{ImageCenter, TextureAtlasCenter},
     // instance::snake::snake_create_raw,
-    state::loading::SpriteCenter,
-    systems::{camera::CursorPosition, instance::shadow::ShadowAsset},
+    systems::camera::CursorPosition,
     utils::random::{random_arr4, random_range},
 };
 
@@ -22,8 +22,8 @@ fn step(
     cursorPosition: Res<CursorPosition>,
     debugStatus: Res<DebugStatus>,
 
-    spriteCenter: Res<SpriteCenter>,
-    shadowHandle: Res<ShadowAsset>,
+    textureAtlasCenter: Res<TextureAtlasCenter>,
+    imageCenter: Res<ImageCenter>,
 ) {
     if (!debugStatus.instance_debug) {
         return;
@@ -31,8 +31,8 @@ fn step(
     if (mouseInput.just_pressed(MouseButton::Left)) {
         snake_create_raw(
             &mut commands,
-            spriteCenter,
-            shadowHandle,
+            textureAtlasCenter,
+            imageCenter,
             cursorPosition.x,
             cursorPosition.y,
         );

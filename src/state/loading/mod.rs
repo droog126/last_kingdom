@@ -6,11 +6,19 @@ use bevy_asset_loader::{AssetCollection, AssetLoader};
 
 pub struct LoadingPlugin;
 
-pub struct SpriteCenter(pub HashMap<String, Handle<TextureAtlas>>);
-impl FromWorld for SpriteCenter {
+pub struct TextureAtlasCenter(pub HashMap<String, Handle<TextureAtlas>>);
+impl FromWorld for TextureAtlasCenter {
     fn from_world(world: &mut World) -> Self {
-        let mut spriteCenter: HashMap<String, Handle<TextureAtlas>> = HashMap::new();
-        SpriteCenter(spriteCenter)
+        let mut assertCenter: HashMap<String, Handle<TextureAtlas>> = HashMap::new();
+        TextureAtlasCenter(assertCenter)
+    }
+}
+
+pub struct ImageCenter(pub HashMap<String, Handle<Image>>);
+impl FromWorld for ImageCenter {
+    fn from_world(world: &mut World) -> Self {
+        let mut assertCenter: HashMap<String, Handle<Image>> = HashMap::new();
+        ImageCenter(assertCenter)
     }
 }
 
@@ -23,7 +31,9 @@ impl Plugin for LoadingPlugin {
             .with_collection::<FontAssets>()
             .continue_to_state(GameState::Menu)
             .build(app);
-        app.init_resource::<SpriteCenter>()
+
+        app.init_resource::<TextureAtlasCenter>()
+            .init_resource::<ImageCenter>()
             .add_startup_system(startup);
     }
 }
@@ -36,7 +46,9 @@ pub struct FontAssets {
 }
 
 fn startup(
-    mut spriteCenter: ResMut<SpriteCenter>,
+    mut textureAtlasCenter: ResMut<TextureAtlasCenter>,
+    mut imageCenter: ResMut<ImageCenter>,
+
     asset_server: Res<AssetServer>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
 ) {
@@ -50,5 +62,17 @@ fn startup(
     );
 
     let sprite_handle = texture_atlases.add(sprite_atlas);
-    spriteCenter.0.insert("snake".to_string(), sprite_handle);
+    textureAtlasCenter
+        .0
+        .insert("snake".to_string(), sprite_handle);
+
+    let mut imageHandle = asset_server.load("basicShape/circle.png");
+    imageCenter
+        .0
+        .insert("circle".to_string(), imageHandle.clone());
+
+    let mut imageHandle = asset_server.load("shadow/shadow.png");
+    imageCenter
+        .0
+        .insert("shadow".to_string(), imageHandle.clone());
 }

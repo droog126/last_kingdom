@@ -1,10 +1,9 @@
 use crate::instance::utils::create_instance_collision;
 use crate::instance::{InstanceCamp, InstanceType};
-use crate::state::loading::SpriteCenter;
+use crate::state::loading::{ImageCenter, TextureAtlasCenter};
 use crate::systems::collision::{CollisionResultArr, _repel};
 use crate::systems::debug::DebugStatus;
 use crate::systems::input::InsInput;
-use crate::systems::instance::shadow::ShadowAsset;
 use crate::systems::stateMachine::{AnimationState, StateChangeEvt, StateInfo, StateMachine};
 use bevy::math::Vec3Swizzles;
 use bevy_prototype_lyon::prelude::*;
@@ -63,10 +62,10 @@ fn playerCollisionExclude(
 pub fn player_create(
     mut local: Local<bool>,
     mut commands: Commands,
-    mut spriteCenter: ResMut<SpriteCenter>,
+    mut textureAtlasCenter: ResMut<TextureAtlasCenter>,
     asset_server: Res<AssetServer>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
-    shadowHandle: Res<ShadowAsset>,
+    imageCenter: Res<ImageCenter>,
 ) {
     println!("我是否是第一次调用{:?}", local);
 
@@ -81,7 +80,9 @@ pub fn player_create(
         );
 
         let sprite_handle = texture_atlases.add(sprite_atlas);
-        spriteCenter.0.insert("player".to_string(), sprite_handle);
+        textureAtlasCenter
+            .0
+            .insert("player".to_string(), sprite_handle);
 
         *local = true;
     }
@@ -90,7 +91,7 @@ pub fn player_create(
         // 阴影实体
         let shadowId = commands
             .spawn_bundle(SpriteBundle {
-                texture: shadowHandle.clone(),
+                texture: imageCenter.0.get("shadow").unwrap().clone(),
                 transform: Transform {
                     scale: Vec3::new(1.0, 0.5, 0.0),
                     ..default()
@@ -106,7 +107,7 @@ pub fn player_create(
                     translation: Vec3::new(0.0, 20.0, 10.0),
                     ..Default::default()
                 },
-                texture_atlas: spriteCenter.0.get("player").unwrap().clone(),
+                texture_atlas: textureAtlasCenter.0.get("player").unwrap().clone(),
                 ..Default::default()
             })
             .insert(AnimationState(StateMachine::Idle, 1.0, getPlayerSprite))

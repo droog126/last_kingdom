@@ -2,7 +2,7 @@ use bevy::core::FixedTimestep;
 use bevy::prelude::*;
 use bevy::utils::hashbrown::HashMap;
 
-use crate::state::loading::SpriteCenter;
+use crate::state::loading::TextureAtlasCenter;
 
 #[derive(Component, Copy, Clone, Eq, PartialEq, Debug, Hash, Reflect)]
 #[reflect(Component)]
@@ -73,7 +73,7 @@ fn state_trigger(
         &mut Handle<TextureAtlas>,
         &mut Transform,
     )>,
-    mut spriteCenter: ResMut<SpriteCenter>,
+    mut textureAtlasCenter: ResMut<TextureAtlasCenter>,
 ) {
     for ev in stateChangeRead.iter() {
         if let Ok((mut animationState, mut sprite, mut sprite_handle, mut transform)) =
@@ -89,7 +89,7 @@ fn state_trigger(
                     endIndex,
                 } = animationState.get();
 
-                let newSpriteHandle = spriteCenter.0.get(&spriteName).unwrap();
+                let newSpriteHandle = textureAtlasCenter.0.get(&spriteName).unwrap();
 
                 *sprite_handle = newSpriteHandle.clone();
                 sprite.index = startIndex;
