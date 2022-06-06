@@ -1,3 +1,4 @@
+pub mod attack;
 pub mod camera;
 pub mod collision;
 pub mod debug;

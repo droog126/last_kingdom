@@ -1,5 +1,6 @@
 use crate::instance::player::{player_create, player_step};
 use crate::state::GameState;
+use crate::systems::attack::attack_event_distribution_system;
 use bevy::core::FixedTimestep;
 use bevy::prelude::*;
 
@@ -7,7 +8,11 @@ pub struct PlayingPlugin;
 impl Plugin for PlayingPlugin {
     fn build(&self, app: &mut bevy::prelude::App) {
         app.add_system_set(SystemSet::on_enter(GameState::Playing).with_system(playing_enter))
-            .add_system_set(SystemSet::on_update(GameState::Playing).with_system(playing_setup))
+            .add_system_set(
+                SystemSet::on_update(GameState::Playing)
+                    .with_system(playing_setup)
+                    .with_system(attack_event_distribution_system),
+            )
             .add_system_set(SystemSet::on_exit(GameState::Playing).with_system(playing_exit));
     }
 }

@@ -13,20 +13,6 @@ use super::debug::egui::DebugTable;
 #[derive(Component)]
 pub struct CollisionID(pub Entity);
 
-#[derive(Clone, Debug, PartialEq)]
-pub enum CollisionInner {
-    Static,
-    Scope {
-        parentId: Entity,
-        other: Vec<Entity>,
-    },
-    Instance {
-        pos: Vec2,
-        force: Vec2,
-        wall_move: [Option<f32>; 2],
-    },
-}
-
 // 生产因子一般来源于需求，也就是消费者
 pub enum CollisionShapeType {
     Rect,
@@ -39,6 +25,7 @@ pub struct CollisionInput {
     pub shape: CollisionShape,
 }
 
+// 我只接受的对象
 pub type CollisionExcludeFunction = fn(&InstanceType, &CollisionType, &InstanceCamp) -> bool;
 
 #[derive(Component, Debug)]
@@ -47,7 +34,7 @@ pub struct CollisionResultArr {
 }
 #[derive(Debug, Clone)]
 pub struct CollisionResultItem {
-    id: Entity,
+    pub id: Entity,
     collisionType: CollisionType,
     instanceType: InstanceType,
     instanceCamp: InstanceCamp,
@@ -125,13 +112,6 @@ pub fn collision_step(world: &mut World) {
         ));
     }
 
-    // #[cfg(debug_assertions)]
-    // {
-    //     if let Some(table) = debugTable {
-    //         table.collisionCount = Some(dynBots.len());
-    //     }
-    // }
-
     let mut tree = broccoli::Tree::par_new(&mut dynBots);
 
     tree.par_find_colliding_pairs(|a, b| {
@@ -187,6 +167,13 @@ pub fn collision_step(world: &mut World) {
             }
         }
     });
+
+    #[cfg(debug_assertions)]
+    {
+        let len = dynBots.len();
+        let mut collisionTable = world.resource_mut::<DebugTable>();
+        collisionTable.collisionCount = Some(len);
+    }
 }
 
 pub fn _repel(aPos: &Vec2, bPos: &Vec2, _closest: Option<f32>, _mag: Option<f32>) -> Vec2 {
