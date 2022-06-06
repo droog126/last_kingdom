@@ -1,10 +1,12 @@
 use crate::instance::utils::create_instance_collision;
 use crate::instance::{InstanceCamp, InstanceType};
 use crate::state::loading::{ImageCenter, TextureAtlasCenter};
+use crate::systems::attack::AttackStorehouseArr;
 use crate::systems::collision::{CollisionResultArr, _repel};
 use crate::systems::debug::DebugStatus;
 use crate::systems::input::InsInput;
-use crate::systems::stateMachine::{AnimationState, StateChangeEvt, StateInfo, StateMachine};
+use crate::systems::stateMachine::{AnimationMachine, AnimationValue, StateChangeEvt, StateInfo};
+use crate::systems::timeLine::{self, TimeLine};
 use bevy::math::Vec3Swizzles;
 use bevy_prototype_lyon::prelude::*;
 
@@ -28,14 +30,14 @@ pub struct PlayerProps {
 #[derive(Component)]
 pub struct PlayerTag;
 
-fn getPlayerSprite(animationState: &AnimationState) -> StateInfo {
-    match (animationState.0) {
-        StateMachine::Idle => StateInfo {
+fn getPlayerSprite(animationValue: &AnimationValue) -> StateInfo {
+    match *animationValue {
+        AnimationValue::Idle => StateInfo {
             startIndex: 0,
             endIndex: 0,
             spriteName: "player".to_string(),
         },
-        StateMachine::Walk => StateInfo {
+        AnimationValue::Walk => StateInfo {
             startIndex: 8,
             endIndex: 15,
             spriteName: "player".to_string(),
@@ -110,7 +112,11 @@ pub fn player_create(
                 texture_atlas: textureAtlasCenter.0.get("player").unwrap().clone(),
                 ..Default::default()
             })
-            .insert(AnimationState(StateMachine::Idle, 1.0, getPlayerSprite))
+            .insert(AnimationMachine {
+                value: AnimationValue::Idle,
+                progress: 0.0,
+                config: getPlayerSprite,
+            })
             .insert(Name::new("playerAnimation".to_string()))
             .insert(PlayerAnimationTag)
             .id();
@@ -127,7 +133,7 @@ pub fn player_create(
             Some(playerCollisionExclude),
             0.0,
             0.0,
-            20.0,
+            10.0,
             10.0,
         );
 
@@ -151,12 +157,14 @@ pub fn player_create(
 
 pub fn player_step(
     time: Res<Time>,
+    timeLine: Res<TimeLine>,
     mut query: Query<
         (
             &mut Transform,
             &PlayerProps,
             &InsInput,
             &mut CollisionResultArr,
+            &mut AttackStorehouseArr,
             &Children,
         ),
         With<PlayerTag>,
@@ -165,6 +173,7 @@ pub fn player_step(
     mut changeStateEvent: EventWriter<StateChangeEvt>,
     debugStatus: Res<DebugStatus>,
 ) {
+    let timeLineRaw = timeLine.0;
     // 有输入=>移动逻辑
     if debugStatus.camera_debug {
         return;
@@ -172,18 +181,20 @@ pub fn player_step(
 
     let mut nextLen = Vec2::splat(0.0);
 
-    for (mut trans, props, input, mut collisionResultArr, children) in query.iter_mut() {
+    for (mut trans, props, input, mut collisionResultArr, mut attackStorehouseArr, children) in
+        query.iter_mut()
+    {
         let animationInstanceId = children[0];
         if input.dir.length() == 0.0 {
             changeStateEvent.send(StateChangeEvt {
                 ins: animationInstanceId,
-                newState: StateMachine::Idle,
+                newValue: AnimationValue::Idle,
                 xDir: input.dir.x,
             });
         } else {
             changeStateEvent.send(StateChangeEvt {
                 ins: animationInstanceId,
-                newState: StateMachine::Walk,
+                newValue: AnimationValue::Walk,
                 xDir: input.dir.x,
             });
             nextLen.x = input.dir.x * props.spd * time.delta_seconds();
@@ -203,5 +214,21 @@ pub fn player_step(
 
         trans.translation.x += nextLen.x;
         trans.translation.y += nextLen.y;
+
+        // 处理攻击事件仓库
+
+        // let mut arr = &mut attackStorehouseArr.arr;
+
+        attackStorehouseArr
+            .arr
+            .retain_mut(|e| timeLineRaw < e.nextTime);
+
+        for attackEvent in attackStorehouseArr.arr.iter_mut() {
+            // ？？？？？？
+            if let Some(repelData) = attackEvent.repelData.as_mut() {
+                trans.translation += (repelData.dif * time.delta_seconds());
+            }
+        }
+        // attackStorehouseArr.arr.clear();
     }
 }

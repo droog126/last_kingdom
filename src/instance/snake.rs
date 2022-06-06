@@ -1,7 +1,8 @@
 use crate::state::loading::{ImageCenter, TextureAtlasCenter};
+use crate::systems::attack::{AttackEvent, AttackEventPart, RepelData};
 use crate::systems::collision::{CollisionResultArr, _repel};
 use crate::systems::debug::DebugStatus;
-use crate::systems::stateMachine::{AnimationState, StateChangeEvt, StateInfo, StateMachine};
+use crate::systems::stateMachine::{AnimationMachine, AnimationValue, StateChangeEvt, StateInfo};
 use crate::systems::timeLine::TimeLine;
 use crate::utils::random::{random_Vec2, random_in_unlimited, random_range};
 use bevy::math::Vec3Swizzles;
@@ -37,19 +38,24 @@ enum AiState {
     Stroll { dir: Vec2, nextTime: i32 },
     Daze,
     Chase,
-    Attack { pos: Vec2 },
+    Attack { pos: Vec2, happenTime: i32 },
 }
 
-fn getSnakeSprite(animationState: &AnimationState) -> StateInfo {
-    match (animationState.0) {
-        StateMachine::Idle => StateInfo {
+fn getSnakeSprite(animationValue: &AnimationValue) -> StateInfo {
+    match *animationValue {
+        AnimationValue::Idle => StateInfo {
             startIndex: 0,
             endIndex: 7,
             spriteName: "snake".to_string(),
         },
-        StateMachine::Walk => StateInfo {
+        AnimationValue::Walk => StateInfo {
             startIndex: 8,
             endIndex: 15,
+            spriteName: "snake".to_string(),
+        },
+        AnimationValue::Attack => StateInfo {
+            startIndex: 16,
+            endIndex: 21,
             spriteName: "snake".to_string(),
         },
         _ => StateInfo {
@@ -113,7 +119,11 @@ pub fn snake_create_raw(
             ..Default::default()
         })
         .insert(SnakeProps { spd: 200.0 })
-        .insert(AnimationState(StateMachine::Idle, 1.0, getSnakeSprite))
+        .insert(AnimationMachine {
+            value: AnimationValue::Idle,
+            config: getSnakeSprite,
+            progress: 0.0,
+        })
         .insert(Name::new("snake".to_string()))
         .insert(SnakeAnimationTag)
         .id();
@@ -177,6 +187,7 @@ pub fn snake_step(
         (With<SnakeTag>, Without<SnakeScopeTag>),
     >,
     mut scopeQuery: Query<&mut CollisionResultArr, (With<SnakeScopeTag>, Without<SnakeTag>)>,
+    mut animationQuery: Query<&mut AnimationMachine, With<SnakeAnimationTag>>,
 ) {
     let timeLineRaw = timeLine.0;
 
@@ -206,6 +217,8 @@ pub fn snake_step(
         // feat:Ai
         let mut scopeCollisionResultArr = scopeQuery.get_mut(scopeEntityId).unwrap();
         let mut len = scopeCollisionResultArr.arr.len();
+
+        println!("len: {}", len);
         if len > 0 {
             let target = &mut scopeCollisionResultArr.arr[0];
             let mut diff = target.shape.pos.extend(0.0) - trans.translation;
@@ -218,35 +231,60 @@ pub fn snake_step(
                     snakeAi.state = AiState::Chase;
                 }
                 AiState::Chase => {
-                    if (diff.xy().length() < 30.0) {
+                    if (diff.xy().length() < 20.0) {
                         snakeAi.state = AiState::Attack {
                             pos: target.shape.pos,
+                            happenTime: timeLineRaw,
                         };
                     }
                     diff = diff.normalize();
                     trans.translation += diff * time.delta_seconds() * 100.0;
                     changeStateEvent.send(StateChangeEvt {
                         ins: animationId,
-                        newState: StateMachine::Walk,
+                        newValue: AnimationValue::Walk,
                         xDir: diff.x,
                     });
                 }
-                AiState::Attack { pos } => {
-                    // create_attack_box(
-                    //     shadowHandle.clone(),
-                    //     textureAtlasCenter.0.get("snake").unwrap().clone(),
-                    //     getSnakeSprite,
-                    //     &mut commands,
-                    //     "_snake",
-                    //     SnakeTag,
-                    //     InstanceType::Snake,
-                    //     InstanceCamp::Hostile,
-                    //     None,
-                    //     pos.x,
-                    //     pos.y,
-                    //     20.,
-                    //     20.,
-                    // );
+                AiState::Attack { pos, happenTime } => {
+                    let mut _progress = 0.0;
+                    if let Ok(mut animationMachine) = animationQuery.get_mut(children[0]) {
+                        _progress = animationMachine.progress;
+                        animationMachine.progress = 0.0;
+                    }
+
+                    if _progress == 1.0 {
+                        snakeAi.state = AiState::Daze;
+                        create_attack_box(
+                            &mut commands,
+                            imageCenter.0.get("circle").unwrap().clone(),
+                            InstanceType::Snake,
+                            InstanceCamp::Hostile,
+                            Some(|instanceType, collisionType, instanceCamp| {
+                                if (instanceType == &InstanceType::Player) {
+                                    false
+                                } else {
+                                    true
+                                }
+                            }),
+                            AttackEventPart {
+                                damage: 2.0,
+                                nextTime: timeLineRaw + 20,
+                                repelData: Some(RepelData {
+                                    dif: diff.normalize() * 60.0,
+                                    timeLen: 20,
+                                }),
+                            },
+                            pos.x,
+                            pos.y,
+                            20.,
+                            20.,
+                        );
+                    }
+                    changeStateEvent.send(StateChangeEvt {
+                        ins: animationId,
+                        newValue: AnimationValue::Attack,
+                        xDir: diff.x,
+                    })
                 }
             }
         } else {
@@ -260,7 +298,7 @@ pub fn snake_step(
 
                     changeStateEvent.send(StateChangeEvt {
                         ins: animationId,
-                        newState: StateMachine::Walk,
+                        newValue: AnimationValue::Walk,
                         xDir: dir.x,
                     });
                 }
@@ -273,14 +311,14 @@ pub fn snake_step(
                     }
                     changeStateEvent.send(StateChangeEvt {
                         ins: animationId,
-                        newState: StateMachine::Idle,
+                        newValue: AnimationValue::Idle,
                         xDir: 0.0,
                     });
                 }
                 AiState::Chase => {
                     snakeAi.state = AiState::Daze;
                 }
-                AiState::Attack { pos } => {
+                AiState::Attack { .. } => {
                     snakeAi.state = AiState::Daze;
                 }
             }

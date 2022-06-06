@@ -1,8 +1,11 @@
+use crate::systems::attack::{
+    self, AttackBoxTag, AttackEvent, AttackEventPart, AttackStorehouseArr,
+};
 use crate::systems::collision::{
     CollisionExcludeFunction, CollisionInput, CollisionResultArr, CollisionShape,
 };
 use crate::systems::instance::InstanceCollisionTag;
-use crate::systems::stateMachine::{AnimationState, StateInfo, StateMachine};
+use crate::systems::stateMachine::{AnimationMachine, AnimationValue, StateInfo};
 use crate::utils::num::y_to_z;
 use bevy::math::Vec2;
 use bevy::prelude::*;
@@ -34,7 +37,6 @@ pub fn create_instance_collision(
             ..default()
         })
         .insert(Name::new("collision"))
-        .insert(Visibility { is_visible: false })
         .insert(InstanceCollisionTag)
         .id();
 
@@ -58,7 +60,8 @@ pub fn create_instance_collision(
                 pos: Vec2::new(x, y),
             },
         })
-        .insert(CollisionResultArr { arr: vec![] });
+        .insert(CollisionResultArr { arr: vec![] })
+        .insert(AttackStorehouseArr { arr: vec![] });
 
     return collisionId;
 }
@@ -81,7 +84,6 @@ pub fn create_sta_collision(
             ..default()
         })
         .insert(Name::new("staCollision"))
-        // .insert(Visibility { is_visible: false })
         .id();
 
     return collisionId;
@@ -137,7 +139,7 @@ pub fn create_scope_collision(
 pub fn create_instance<T>(
     shadowImage: Handle<Image>,
     textureAtlas: Handle<TextureAtlas>,
-    getSpriteIndex: fn(&AnimationState) -> StateInfo,
+    getSpriteIndex: fn(&AnimationValue) -> StateInfo,
     commands: &mut Commands,
     name: &str,
 
@@ -174,7 +176,11 @@ pub fn create_instance<T>(
             texture_atlas: textureAtlas,
             ..Default::default()
         })
-        .insert(AnimationState(StateMachine::Idle, 1.0, getSpriteIndex))
+        .insert(AnimationMachine {
+            value: AnimationValue::Idle,
+            config: getSpriteIndex,
+            progress: 0.0,
+        })
         .insert(Name::new(name.to_string()))
         .id();
 
@@ -262,7 +268,7 @@ pub fn create_attack_box(
     instanceType: InstanceType,
     instanceCamp: InstanceCamp,
     collisionExcludeFunction: Option<CollisionExcludeFunction>,
-
+    attackEventPart: AttackEventPart,
     x: f32,
     y: f32,
     width: f32,
@@ -300,7 +306,14 @@ pub fn create_attack_box(
                 pos: Vec2::new(x, y),
             },
         })
-        .insert(CollisionResultArr { arr: vec![] });
+        .insert(CollisionResultArr { arr: vec![] })
+        .insert(AttackBoxTag)
+        .insert(AttackEvent {
+            id: collisionId,
+            damage: attackEventPart.damage,
+            nextTime: attackEventPart.nextTime,
+            repelData: attackEventPart.repelData,
+        });
 
     return collisionId;
 }

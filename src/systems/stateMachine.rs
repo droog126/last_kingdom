@@ -6,54 +6,56 @@ use crate::state::loading::TextureAtlasCenter;
 
 #[derive(Component, Copy, Clone, Eq, PartialEq, Debug, Hash, Reflect)]
 #[reflect(Component)]
-pub enum StateMachine {
+pub enum AnimationValue {
     Idle,
     Walk,
+    Attack,
 }
-impl Default for StateMachine {
+impl Default for AnimationValue {
     fn default() -> Self {
-        StateMachine::Idle
+        AnimationValue::Idle
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct StateInfo {
     pub startIndex: usize,
     pub endIndex: usize,
     pub spriteName: String,
 }
-
 #[derive(Component, Clone)]
+pub struct AnimationMachine {
+    pub value: AnimationValue,
+    pub progress: f32,
+    pub config: fn(&AnimationValue) -> StateInfo,
+}
 
-pub struct AnimationState(
-    pub StateMachine,
-    pub f32,
-    pub fn(&AnimationState) -> StateInfo,
-);
-
-impl AnimationState {
+impl Default for AnimationMachine {
+    fn default() -> Self {
+        Self {
+            value: AnimationValue::Idle,
+            progress: 0.0,
+            config: |_| StateInfo {
+                ..Default::default()
+            },
+        }
+    }
+}
+impl AnimationMachine {
     fn get(&self) -> StateInfo {
-        (self.2)(self)
+        (self.config)(&self.value)
     }
 }
 
 pub struct StateChangeEvt {
     pub ins: Entity,
-    pub newState: StateMachine,
+    pub newValue: AnimationValue,
     pub xDir: f32,
-}
-
-pub struct NextActMap(pub HashMap<Entity, NextActMapValue>);
-pub struct NextActMapValue {
-    pub nextState: StateMachine,
-    pub nextXScale: f32,
 }
 
 pub struct StateMachinePlugin;
 impl Plugin for StateMachinePlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(NextActMap(HashMap::new()));
-
         app.add_event::<StateChangeEvt>()
             .add_system(state_trigger.label("stateUpdate"))
             .add_system_set(
@@ -68,31 +70,30 @@ impl Plugin for StateMachinePlugin {
 fn state_trigger(
     mut stateChangeRead: EventReader<StateChangeEvt>,
     mut query: Query<(
-        &mut AnimationState,
+        &mut AnimationMachine,
         &mut TextureAtlasSprite,
         &mut Handle<TextureAtlas>,
         &mut Transform,
     )>,
-    mut textureAtlasCenter: ResMut<TextureAtlasCenter>,
+    textureAtlasCenter: Res<TextureAtlasCenter>,
 ) {
     for ev in stateChangeRead.iter() {
-        if let Ok((mut animationState, mut sprite, mut sprite_handle, mut transform)) =
+        if let Ok((mut animationMachine, mut sprite, mut sprite_handle, mut transform)) =
             query.get_mut(ev.ins)
         {
-            if (animationState.0 != ev.newState) {
-                animationState.0 = ev.newState;
+            if (animationMachine.value != ev.newValue) {
+                animationMachine.value = ev.newValue;
                 sprite.index = 0;
-
                 let StateInfo {
                     spriteName,
                     startIndex,
                     endIndex,
-                } = animationState.get();
-
-                let newSpriteHandle = textureAtlasCenter.0.get(&spriteName).unwrap();
-
-                *sprite_handle = newSpriteHandle.clone();
+                } = animationMachine.get();
                 sprite.index = startIndex;
+
+                // 为什么需要替换呢 他们不是相等吗？
+                let newTextureAtlasHandle = textureAtlasCenter.0.get(&spriteName).unwrap().clone();
+                *sprite_handle = newTextureAtlasHandle;
             }
 
             if (ev.xDir > 0.0) {
@@ -107,18 +108,20 @@ fn state_trigger(
     }
 }
 
-fn sprite_update(mut query: Query<(&mut AnimationState, &mut TextureAtlasSprite)>) {
-    for (mut animationState, mut sprite) in query.iter_mut() {
+fn sprite_update(mut query: Query<(&mut AnimationMachine, &mut TextureAtlasSprite)>) {
+    for (mut animationMachine, mut sprite) in query.iter_mut() {
         let StateInfo {
             startIndex,
             endIndex,
             spriteName,
-        } = animationState.get();
+        } = animationMachine.get();
 
         if (sprite.index >= endIndex) {
             sprite.index = startIndex;
         } else {
             sprite.index += 1;
         }
+        animationMachine.progress =
+            (sprite.index - startIndex) as f32 / (endIndex - startIndex) as f32;
     }
 }
