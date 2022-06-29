@@ -29,6 +29,7 @@ fn getPlayerSprite(animationValue: &AnimationValue) -> StateInfo {
         _ => StateInfo { startIndex: 0, endIndex: 0, spriteName: "player".to_string() },
     }
 }
+
 fn playerCollisionExclude(
     instanceType: &InstanceType,
     collisionType: &CollisionType,
@@ -47,7 +48,7 @@ pub fn player_create(
     imageCenter: &Res<ImageCenter>,
     x: f32,
     y: f32,
-) {
+) -> Entity {
     // 阴影实体
     let shadowId = commands
         .spawn_bundle(SpriteBundle {
@@ -101,6 +102,8 @@ pub fn player_create(
     commands.entity(instanceId).push_children(&[animationId, shadowId]);
 
     commands.insert_resource(GLobalPlayerID(instanceId));
+
+    instanceId
 }
 
 pub fn player_step(
@@ -162,9 +165,10 @@ pub fn player_step(
         // 处理攻击事件仓库
 
         // let mut arr = &mut attackStorehouseArr.arr;
-
         attackStorehouseArr.arr.retain_mut(|e| timeLineRaw < e.nextTime);
         for attackEvent in attackStorehouseArr.arr.iter_mut() {
+            instanceProps.sub_hp(attackEvent.damage);
+            attackEvent.damage = 0.0;
             if let Some(repelData) = attackEvent.repelData.as_mut() {
                 trans.translation += (repelData.dif * time.delta_seconds());
             }
