@@ -32,13 +32,7 @@ pub struct AnimationMachine {
 
 impl Default for AnimationMachine {
     fn default() -> Self {
-        Self {
-            value: AnimationValue::Idle,
-            progress: 0.0,
-            config: |_| StateInfo {
-                ..Default::default()
-            },
-        }
+        Self { value: AnimationValue::Idle, progress: 0.0, config: |_| StateInfo { ..Default::default() } }
     }
 }
 impl AnimationMachine {
@@ -53,16 +47,12 @@ pub struct StateChangeEvt {
     pub xDir: f32,
 }
 
-pub struct StateMachinePlugin;
-impl Plugin for StateMachinePlugin {
+pub struct AnimationPlugin;
+impl Plugin for AnimationPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<StateChangeEvt>()
             .add_system(state_trigger.label("stateUpdate"))
-            .add_system_set(
-                SystemSet::new()
-                    .with_run_criteria(FixedTimestep::step(0.1))
-                    .with_system(sprite_update),
-            );
+            .add_system_set(SystemSet::new().with_run_criteria(FixedTimestep::step(0.1)).with_system(sprite_update));
         // .add_system(step);
     }
 }
@@ -78,17 +68,11 @@ fn state_trigger(
     textureAtlasCenter: Res<TextureAtlasCenter>,
 ) {
     for ev in stateChangeRead.iter() {
-        if let Ok((mut animationMachine, mut sprite, mut sprite_handle, mut transform)) =
-            query.get_mut(ev.ins)
-        {
+        if let Ok((mut animationMachine, mut sprite, mut sprite_handle, mut transform)) = query.get_mut(ev.ins) {
             if (animationMachine.value != ev.newValue) {
                 animationMachine.value = ev.newValue;
                 sprite.index = 0;
-                let StateInfo {
-                    spriteName,
-                    startIndex,
-                    endIndex,
-                } = animationMachine.get();
+                let StateInfo { spriteName, startIndex, endIndex } = animationMachine.get();
                 sprite.index = startIndex;
 
                 // 为什么需要替换呢 他们不是相等吗？
@@ -110,18 +94,13 @@ fn state_trigger(
 
 fn sprite_update(mut query: Query<(&mut AnimationMachine, &mut TextureAtlasSprite)>) {
     for (mut animationMachine, mut sprite) in query.iter_mut() {
-        let StateInfo {
-            startIndex,
-            endIndex,
-            spriteName,
-        } = animationMachine.get();
+        let StateInfo { startIndex, endIndex, spriteName } = animationMachine.get();
 
         if (sprite.index >= endIndex) {
             sprite.index = startIndex;
         } else {
             sprite.index += 1;
         }
-        animationMachine.progress =
-            (sprite.index - startIndex) as f32 / (endIndex - startIndex) as f32;
+        animationMachine.progress = (sprite.index - startIndex) as f32 / (endIndex - startIndex) as f32;
     }
 }

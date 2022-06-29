@@ -1,14 +1,14 @@
-use bevy::{math::Vec3Swizzles, prelude::*};
-
-use crate::instance::{
-    CollisionType, CollisionTypeValue, InstanceCamp, InstanceCampValue, InstanceType,
-    InstanceTypeValue,
+use crate::systems::debug::egui::DebugTable;
+use bevy::math::Vec3Swizzles;
+use bevy::prelude::*;
+use broccoli::{
+    axgeom::Rect,
+    tree::{bbox, node::ManySwappable},
 };
-use broccoli::{axgeom::Rect, tree::bbox};
 
-use super::debug::egui::DebugTable;
-
-// use super::debug::egui::DebugTable;
+use super::instanceType::{
+    CollisionType, CollisionTypeValue, InstanceCamp, InstanceCampValue, InstanceType, InstanceTypeValue,
+};
 
 #[derive(Component)]
 pub struct CollisionID(pub Entity);
@@ -99,7 +99,7 @@ pub fn collision_step(world: &mut World) {
             shape.pos.y - shape.heightHalf,
             shape.pos.y + shape.heightHalf,
         );
-        dynBots.push(bbox(
+        dynBots.push(ManySwappable((
             rect,
             (
                 entity,
@@ -109,7 +109,7 @@ pub fn collision_step(world: &mut World) {
                 collisionInput,
                 collisionResultArr,
             ),
-        ));
+        )));
     }
 
     let mut tree = broccoli::Tree::par_new(&mut dynBots);

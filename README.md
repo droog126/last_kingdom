@@ -5,7 +5,11 @@
 1. 蛇攻击
     1.1 攻击盒子
     1.1.1 初步完成完成通用实例创建函数 (doing)
-    攻击特效
+    攻击特效  
+
+    生命属性系统
+    
+
     gms解包
     untiy解包
     godot解包
@@ -13,6 +17,8 @@
 2. 人攻击
     2. 武器系统
 
+### p1
+粒子系统
 
     
 # 进度
@@ -96,6 +102,7 @@ cargo run --features bevy/trace_chrome
 20000sprite 20000collision 理想碰撞规则  =  66-78fps
 40000sprite 40000collision 理想碰撞规则  =  30-37fps
 
+// here
 20000sprite 20000collision 实际碰撞规则  =  66-78fps
 40000sprite 40000collision 实际碰撞规则  =  30-37fps
 

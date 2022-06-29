@@ -1,16 +1,16 @@
 use crate::state::loading::{ImageCenter, TextureAtlasCenter};
-use crate::systems::attack::{AttackEvent, AttackEventPart, RepelData};
-use crate::systems::collision::{CollisionResultArr, _repel};
 use crate::systems::debug::DebugStatus;
-use crate::systems::stateMachine::{AnimationMachine, AnimationValue, StateChangeEvt, StateInfo};
+use crate::systems::instance::animation::{AnimationMachine, AnimationValue, StateChangeEvt, StateInfo};
+use crate::systems::instance::attack::{create_attack_box, AttackEventPart, RepelData};
+use crate::systems::instance::basicCreate::{create_instance_collision, create_scope_collision};
+use crate::systems::instance::collision::{CollisionResultArr, _repel};
+use crate::systems::instance::props::{BasicProps, InstanceProps};
 use crate::systems::timeLine::TimeLine;
 use crate::utils::random::{random_Vec2, random_in_unlimited, random_range};
 use bevy::math::Vec3Swizzles;
-use bevy::utils::HashMap;
 
 use bevy::prelude::*;
 
-use super::utils::{create_attack_box, create_instance_collision, create_scope_collision};
 use super::{CollisionType, InstanceCamp, InstanceType};
 #[derive(Component)]
 pub struct SnakeTag;
@@ -21,11 +21,6 @@ pub struct SnakeScopeTag;
 #[derive(Component, Debug)]
 
 pub struct SnakeAttackBoxTag;
-
-#[derive(Component, Debug)]
-pub struct SnakeProps {
-    pub spd: f32,
-}
 
 #[derive(Component, Debug)]
 pub struct SnakeAi {
@@ -41,28 +36,13 @@ enum AiState {
     Attack { pos: Vec2, happenTime: i32 },
 }
 
+// 配置
 fn getSnakeSprite(animationValue: &AnimationValue) -> StateInfo {
     match *animationValue {
-        AnimationValue::Idle => StateInfo {
-            startIndex: 0,
-            endIndex: 7,
-            spriteName: "snake".to_string(),
-        },
-        AnimationValue::Walk => StateInfo {
-            startIndex: 8,
-            endIndex: 15,
-            spriteName: "snake".to_string(),
-        },
-        AnimationValue::Attack => StateInfo {
-            startIndex: 16,
-            endIndex: 21,
-            spriteName: "snake".to_string(),
-        },
-        _ => StateInfo {
-            startIndex: 0,
-            endIndex: 0,
-            spriteName: "snake".to_string(),
-        },
+        AnimationValue::Idle => StateInfo { startIndex: 0, endIndex: 7, spriteName: "snake".to_string() },
+        AnimationValue::Walk => StateInfo { startIndex: 8, endIndex: 15, spriteName: "snake".to_string() },
+        AnimationValue::Attack => StateInfo { startIndex: 16, endIndex: 21, spriteName: "snake".to_string() },
+        _ => StateInfo { startIndex: 0, endIndex: 0, spriteName: "snake".to_string() },
     }
 }
 fn snakeCollisionExclude(
@@ -89,10 +69,11 @@ fn snakeScopeCollisionExclude(
     }
 }
 
-pub fn snake_create_raw(
+// create
+pub fn snake_create(
     mut commands: &mut Commands,
-    textureAtlasCenter: Res<TextureAtlasCenter>,
-    imageCenter: Res<ImageCenter>,
+    textureAtlasCenter: &Res<TextureAtlasCenter>,
+    imageCenter: &Res<ImageCenter>,
     x: f32,
     y: f32,
 ) {
@@ -100,34 +81,24 @@ pub fn snake_create_raw(
     let shadowId = commands
         .spawn_bundle(SpriteBundle {
             texture: imageCenter.0.get("shadow").unwrap().clone(),
-            transform: Transform {
-                scale: Vec3::new(1.0, 0.5, 0.0),
-                ..default()
-            },
+            transform: Transform { scale: Vec3::new(1.0, 0.5, 0.0), ..default() },
             ..default()
         })
         .id();
 
-    // 人物实体
+    // 动画实体
     let animationId = commands
         .spawn_bundle(SpriteSheetBundle {
-            transform: Transform {
-                translation: Vec3::new(4.0, 14.0, 10.0),
-                ..Default::default()
-            },
+            transform: Transform { translation: Vec3::new(4.0, 14.0, 10.0), ..Default::default() },
             texture_atlas: textureAtlasCenter.0.get("snake").unwrap().clone(),
             ..Default::default()
         })
-        .insert(SnakeProps { spd: 200.0 })
-        .insert(AnimationMachine {
-            value: AnimationValue::Idle,
-            config: getSnakeSprite,
-            progress: 0.0,
-        })
+        .insert(AnimationMachine { value: AnimationValue::Idle, config: getSnakeSprite, progress: 0.0 })
         .insert(Name::new("snake".to_string()))
         .insert(SnakeAnimationTag)
         .id();
 
+    // 人物实体
     let instanceId = create_instance_collision(
         &mut commands,
         InstanceType::Snake,
@@ -137,8 +108,24 @@ pub fn snake_create_raw(
         y,
         20.0,
         10.0,
+        InstanceProps::new(BasicProps {
+            hp: 20.,
+            energy: 20.,
+            speed: 300.,
+            bouncing: 400.,
+            maxHp: 20.,
+            maxEnergy: 20.,
+            maxSpeed: 300.,
+            maxBouncing: 400.,
+        }),
     );
+    commands
+        .entity(instanceId)
+        .insert(Name::new("snake"))
+        .insert(SnakeTag)
+        .insert(SnakeAi { target: None, state: AiState::Daze });
 
+    // 侦查盒子
     let scopeCollisionId = create_scope_collision(
         &mut commands,
         instanceId,
@@ -151,18 +138,10 @@ pub fn snake_create_raw(
         100.0,
     );
 
-    // instance后置添加
-    commands
-        .entity(instanceId)
-        .insert(Name::new("snake"))
-        .insert(SnakeTag)
-        .insert(SnakeAi {
-            target: None,
-            state: AiState::Daze,
-        })
-        .push_children(&[animationId, shadowId, scopeCollisionId]);
-
     commands.entity(scopeCollisionId).insert(SnakeScopeTag);
+
+    // 添加children
+    commands.entity(instanceId).push_children(&[animationId, shadowId, scopeCollisionId]);
 }
 
 // 运行限制条件，snake确实存在  可能需要一张表来维护
@@ -170,20 +149,12 @@ pub fn snake_step(
     mut commands: Commands,
     textureAtlasCenter: Res<TextureAtlasCenter>,
     imageCenter: Res<ImageCenter>,
-
     time: Res<Time>,
     timeLine: Res<TimeLine>,
     mut changeStateEvent: EventWriter<StateChangeEvt>,
     debugStatus: Res<DebugStatus>,
-
     mut instanceQuery: Query<
-        (
-            Entity,
-            &mut Transform,
-            &mut CollisionResultArr,
-            &mut SnakeAi,
-            &Children,
-        ),
+        (Entity, &mut Transform, &mut CollisionResultArr, &mut SnakeAi, &Children),
         (With<SnakeTag>, Without<SnakeScopeTag>),
     >,
     mut scopeQuery: Query<&mut CollisionResultArr, (With<SnakeScopeTag>, Without<SnakeTag>)>,
@@ -192,9 +163,7 @@ pub fn snake_step(
     let timeLineRaw = timeLine.0;
 
     // let mut instanceQuery = set.p0();
-    for (entity, mut trans, mut collisionResultArr, mut snakeAi, children) in
-        instanceQuery.iter_mut()
-    {
+    for (entity, mut trans, mut collisionResultArr, mut snakeAi, children) in instanceQuery.iter_mut() {
         let scopeEntityId = children[2];
 
         // feat:相互碰撞
@@ -203,12 +172,7 @@ pub fn snake_step(
         let scopeCollisionId = children[2];
 
         for collisionItem in collisionResultArr.arr.iter() {
-            nextLen += _repel(
-                &trans.translation.xy(),
-                &collisionItem.shape.pos,
-                None,
-                None,
-            )
+            nextLen += _repel(&trans.translation.xy(), &collisionItem.shape.pos, None, None)
         }
         collisionResultArr.arr.clear();
         trans.translation.x += nextLen.x;
@@ -218,7 +182,6 @@ pub fn snake_step(
         let mut scopeCollisionResultArr = scopeQuery.get_mut(scopeEntityId).unwrap();
         let mut len = scopeCollisionResultArr.arr.len();
 
-        println!("len: {}", len);
         if len > 0 {
             let target = &mut scopeCollisionResultArr.arr[0];
             let mut diff = target.shape.pos.extend(0.0) - trans.translation;
@@ -232,10 +195,7 @@ pub fn snake_step(
                 }
                 AiState::Chase => {
                     if (diff.xy().length() < 20.0) {
-                        snakeAi.state = AiState::Attack {
-                            pos: target.shape.pos,
-                            happenTime: timeLineRaw,
-                        };
+                        snakeAi.state = AiState::Attack { pos: target.shape.pos, happenTime: timeLineRaw };
                     }
                     diff = diff.normalize();
                     trans.translation += diff * time.delta_seconds() * 100.0;
@@ -269,10 +229,7 @@ pub fn snake_step(
                             AttackEventPart {
                                 damage: 2.0,
                                 nextTime: timeLineRaw + 20,
-                                repelData: Some(RepelData {
-                                    dif: diff.normalize() * 60.0,
-                                    timeLen: 20,
-                                }),
+                                repelData: Some(RepelData { dif: diff.normalize() * 60.0, timeLen: 20 }),
                             },
                             pos.x,
                             pos.y,

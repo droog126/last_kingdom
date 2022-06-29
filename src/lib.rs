@@ -5,7 +5,6 @@
 #![allow(unused_variables)]
 
 pub mod config;
-mod instance;
 mod state;
 mod systems;
 mod utils;
@@ -30,13 +29,11 @@ impl Plugin for GamePlugin {
             // 总线系统
             .add_stage_before(CoreStage::Update, "origin", SystemStage::parallel())
             .add_system_to_stage("origin", state::origin::exclusive_system.exclusive_system())
+            // 实例系统
             // system
             .add_plugin(systems::input::InputPlugin)
-            .add_plugin(systems::stateMachine::StateMachinePlugin)
             .add_plugin(systems::camera::CameraPlugin)
-            .add_plugin(systems::instance::InstancePlugin)
             // .add_plugin(systems::title::TitlePlugin)
-            .add_plugin(systems::collision::CollisionPlugin)
             .add_plugin(systems::ui::UiPlugin)
             .add_plugin(systems::timeLine::TimeLinePlugin)
             .add_plugin(systems::debug::DebugPlugin);
