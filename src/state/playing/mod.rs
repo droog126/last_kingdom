@@ -3,6 +3,7 @@ use crate::systems::instance::attack::attack_event_distribution_system;
 use crate::systems::instance::instanceType::player::player_create;
 use crate::systems::instance::instanceType::snake::snake_step;
 use crate::systems::instance::z_depth_step;
+use crate::systems::item::{twoHand_create, twoHand_step};
 use crate::{state::GameState, systems::instance::instanceType::player::player_step};
 use bevy::core::FixedTimestep;
 use bevy::prelude::*;
@@ -23,7 +24,8 @@ impl Plugin for PlayingPlugin {
                     .with_system(z_depth_step)
                     // 实体系统
                     .with_system(player_step)
-                    .with_system(snake_step),
+                    .with_system(snake_step)
+                    .with_system(twoHand_step),
             )
             .add_system_set(SystemSet::on_exit(GameState::Playing).with_system(playing_exit));
     }
@@ -39,7 +41,8 @@ fn playing_enter(
     let texture: Handle<Image> = asset_server.load("title/firstUser/png/Level_0.png");
     commands.spawn_bundle(SpriteBundle { texture: texture.clone(), ..default() });
     // 暂时在这里创建instance
-    player_create(&mut commands, &textureAtlasCenter, &imageCenter, 0.0, 0.0);
+    let playerId = player_create(&mut commands, &textureAtlasCenter, &imageCenter, 0.0, 0.0);
+    twoHand_create(&mut commands, &textureAtlasCenter, &imageCenter, playerId, 10.0, 10.0);
 }
 
 fn playing_setup() {

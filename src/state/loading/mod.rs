@@ -64,6 +64,13 @@ fn startup(
     let sprite_handle = texture_atlases.add(sprite_atlas);
     textureAtlasCenter.0.insert("player".to_string(), sprite_handle);
 
+    // hand
+    let texture_handle = asset_server.load("sprite/twoHand_sheet.png");
+    let sprite_atlas =
+        TextureAtlas::from_grid_with_padding(texture_handle.clone(), Vec2::new(12.0, 7.0), 8, 2, Vec2::new(0.0, 0.0));
+    let sprite_handle = texture_atlases.add(sprite_atlas);
+    textureAtlasCenter.0.insert("twoHand".to_string(), sprite_handle);
+
     // circle
     let mut imageHandle = asset_server.load("basicShape/circle.png");
     imageCenter.0.insert("circle".to_string(), imageHandle.clone());

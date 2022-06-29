@@ -2,7 +2,11 @@ use bevy::{prelude::*, render::camera::RenderTarget};
 
 use crate::utils::num::MyQueue;
 
-use super::{debug::DebugStatus, input::InsInput, instance::instanceType::player::PlayerTag};
+use super::{
+    debug::DebugStatus,
+    input::InsInput,
+    instance::instanceType::player::{GLobalPlayerID, PlayerTag},
+};
 
 #[derive(Component)]
 pub struct MainCameraTag;
@@ -12,6 +16,8 @@ pub struct CursorPosition {
     pub x: f32,
     pub y: f32,
 }
+
+pub struct CursorDiff(pub Vec3);
 
 pub struct DiffQueue(MyQueue);
 impl FromWorld for DiffQueue {
@@ -25,6 +31,7 @@ impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
         app.add_startup_system(camera_create)
             .insert_resource(CursorPosition { x: 0.0, y: 0.0 })
+            .insert_resource(CursorDiff(Vec3::new(0.0, 0.0, 0.0)))
             .add_system(camera_step);
     }
 }
@@ -40,6 +47,8 @@ fn camera_step(
     wnds: Res<Windows>,
     time: Res<Time>,
     mut cursorPosition: ResMut<CursorPosition>,
+    mut cursorDiff: ResMut<CursorDiff>,
+
     debugStatus: Res<DebugStatus>,
     mut set: ParamSet<(
         Query<(&Camera, &mut Transform), With<MainCameraTag>>,
@@ -73,6 +82,11 @@ fn camera_step(
                 let world_pos: Vec2 = world_pos.truncate();
                 cursorPosition.x = world_pos.x;
                 cursorPosition.y = world_pos.y;
+
+                //diff一下鼠标和玩家的方向
+                if let Some(pos) = playerPosition {
+                    cursorDiff.0 = (Vec3::new(world_pos.x, world_pos.y, 0.0) - pos).normalize();
+                }
             }
 
             // 任务:debug控制相机
