@@ -36,7 +36,9 @@ bevy_pkv="0.5.0"
 
 # 碰撞库
 duckduckgeo ={git="https://github.com/tiby312/duckduckgeo"}
-broccoli = "4.1.1"
+# broccoli = "4.1.1"
+broccoli = "5.0.5"
+
 # duckduckgeo = "0.4.2"
 
 # 优化结构体
@@ -48,6 +50,8 @@ broccoli = "4.1.1"
 # default-features = false
 # features = ["render"]
 
+
+crossbeam-channel = "0.5"
 
 
 [profile.dev.package."*"]

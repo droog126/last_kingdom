@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use bevy::utils::HashMap;
 
 use crate::state::GameState;
 use bevy::prelude::*;
@@ -32,9 +32,7 @@ impl Plugin for LoadingPlugin {
             .continue_to_state(GameState::Menu)
             .build(app);
 
-        app.init_resource::<TextureAtlasCenter>()
-            .init_resource::<ImageCenter>()
-            .add_startup_system(startup);
+        app.init_resource::<TextureAtlasCenter>().init_resource::<ImageCenter>().add_startup_system(startup);
     }
 }
 
@@ -48,31 +46,29 @@ pub struct FontAssets {
 fn startup(
     mut textureAtlasCenter: ResMut<TextureAtlasCenter>,
     mut imageCenter: ResMut<ImageCenter>,
-
     asset_server: Res<AssetServer>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
 ) {
+    // snake
     let texture_handle = asset_server.load("sprite/snake_sheet.png");
-    let sprite_atlas = TextureAtlas::from_grid_with_padding(
-        texture_handle.clone(),
-        Vec2::new(32.0, 32.0),
-        8,
-        5,
-        Vec2::new(0.0, 0.0),
-    );
-
+    let sprite_atlas =
+        TextureAtlas::from_grid_with_padding(texture_handle.clone(), Vec2::new(32.0, 32.0), 8, 5, Vec2::new(0.0, 0.0));
     let sprite_handle = texture_atlases.add(sprite_atlas);
-    textureAtlasCenter
-        .0
-        .insert("snake".to_string(), sprite_handle);
+    textureAtlasCenter.0.insert("snake".to_string(), sprite_handle);
 
+    // player
+
+    let texture_handle = asset_server.load("sprite/player_sheet.png");
+    let sprite_atlas =
+        TextureAtlas::from_grid_with_padding(texture_handle.clone(), Vec2::new(32.0, 50.0), 8, 2, Vec2::new(0.0, 0.0));
+    let sprite_handle = texture_atlases.add(sprite_atlas);
+    textureAtlasCenter.0.insert("player".to_string(), sprite_handle);
+
+    // circle
     let mut imageHandle = asset_server.load("basicShape/circle.png");
-    imageCenter
-        .0
-        .insert("circle".to_string(), imageHandle.clone());
+    imageCenter.0.insert("circle".to_string(), imageHandle.clone());
 
+    // shadow
     let mut imageHandle = asset_server.load("shadow/shadow.png");
-    imageCenter
-        .0
-        .insert("shadow".to_string(), imageHandle.clone());
+    imageCenter.0.insert("shadow".to_string(), imageHandle.clone());
 }

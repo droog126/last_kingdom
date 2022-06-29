@@ -1,10 +1,9 @@
 use bevy::prelude::*;
 
 use crate::{
-    instance::{snake::snake_create_raw, utils::create_sta_collision},
     state::loading::{ImageCenter, TextureAtlasCenter},
     // instance::snake::snake_create_raw,
-    systems::camera::CursorPosition,
+    systems::{camera::CursorPosition, instance::instanceType::snake::snake_create},
     utils::random::{random_arr4, random_range},
 };
 
@@ -21,7 +20,6 @@ fn step(
     mouseInput: Res<Input<MouseButton>>,
     cursorPosition: Res<CursorPosition>,
     debugStatus: Res<DebugStatus>,
-
     textureAtlasCenter: Res<TextureAtlasCenter>,
     imageCenter: Res<ImageCenter>,
 ) {
@@ -29,23 +27,23 @@ fn step(
         return;
     }
     if (mouseInput.just_pressed(MouseButton::Left)) {
-        snake_create_raw(
-            &mut commands,
-            textureAtlasCenter,
-            imageCenter,
-            cursorPosition.x,
-            cursorPosition.y,
-        );
-        println!("create snake{:?}", cursorPosition);
-        // for _ in 0..10000 {
-        //     snake_create_raw(
-        //         &mut commands,
-        //         &mut spriteCenter,
-        //         &mut shadowHandle,
-        //         cursorPosition.x + random_range(-1000.0, 1000.0),
-        //         cursorPosition.y + random_range(-1000.0, 1000.0),
-        //     );
-        // }
+        // snake_create(
+        //     &mut commands,
+        //     textureAtlasCenter,
+        //     imageCenter,
+        //     cursorPosition.x,
+        //     cursorPosition.y,
+        // );
+        // println!("create snake{:?}", cursorPosition);
+        for _ in 0..10000 {
+            snake_create(
+                &mut commands,
+                &textureAtlasCenter,
+                &imageCenter,
+                cursorPosition.x + random_range(-1000.0, 1000.0),
+                cursorPosition.y + random_range(-1000.0, 1000.0),
+            );
+        }
     }
 
     // if mouseInput.just_pressed(MouseButton::Right) {

@@ -1,11 +1,8 @@
 use bevy::prelude::Component;
-
 pub mod player;
 pub mod snake;
-pub mod utils;
 
-// instanceTag
-
+// 阵营Tag
 #[derive(Clone, Debug, PartialEq, Copy, Hash, std::cmp::Eq)]
 pub enum InstanceType {
     Player,

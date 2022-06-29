@@ -1,8 +1,8 @@
 use bevy::{prelude::*, render::camera::RenderTarget};
 
-use crate::{instance::player::PlayerTag, utils::num::MyQueue};
+use crate::utils::num::MyQueue;
 
-use super::{debug::DebugStatus, input::InsInput};
+use super::{debug::DebugStatus, input::InsInput, instance::instanceType::player::PlayerTag};
 
 #[derive(Component)]
 pub struct MainCameraTag;
@@ -66,8 +66,7 @@ fn camera_step(
                 let ndc = (screen_pos / window_size) * 2.0 - Vec2::ONE;
 
                 // matrix for undoing the projection and camera transform
-                let ndc_to_world =
-                    camera_transform.compute_matrix() * camera.projection_matrix.inverse();
+                let ndc_to_world = camera_transform.compute_matrix() * camera.projection_matrix.inverse();
 
                 let world_pos = ndc_to_world.project_point3(ndc.extend(-1.0));
 
