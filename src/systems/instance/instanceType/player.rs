@@ -164,7 +164,6 @@ pub fn player_step(
 
         // 处理攻击事件仓库
 
-        // let mut arr = &mut attackStorehouseArr.arr;
         attackStorehouseArr.arr.retain_mut(|e| timeLineRaw < e.nextTime);
         for attackEvent in attackStorehouseArr.arr.iter_mut() {
             instanceProps.sub_hp(attackEvent.damage);

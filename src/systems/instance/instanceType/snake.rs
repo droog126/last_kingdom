@@ -1,7 +1,7 @@
 use crate::state::loading::{ImageCenter, TextureAtlasCenter};
 use crate::systems::debug::DebugStatus;
 use crate::systems::instance::animation::{AnimationMachine, AnimationValue, StateChangeEvt, StateInfo};
-use crate::systems::instance::attack::{create_attack_box, AttackEventPart, RepelData};
+use crate::systems::instance::attack::{create_attack_box, AttackEventPart, AttackStorehouseArr, RepelData};
 use crate::systems::instance::basicCreate::{create_instance_collision, create_scope_collision};
 use crate::systems::instance::collision::{CollisionResultArr, _repel};
 use crate::systems::instance::props::{BasicProps, InstanceProps};
@@ -154,16 +154,33 @@ pub fn snake_step(
     mut changeStateEvent: EventWriter<StateChangeEvt>,
     debugStatus: Res<DebugStatus>,
     mut instanceQuery: Query<
-        (Entity, &mut Transform, &mut CollisionResultArr, &mut SnakeAi, &Children),
+        (
+            Entity,
+            &mut Transform,
+            &mut CollisionResultArr,
+            &mut SnakeAi,
+            &Children,
+            &mut AttackStorehouseArr,
+            &mut InstanceProps,
+        ),
         (With<SnakeTag>, Without<SnakeScopeTag>),
     >,
-    mut scopeQuery: Query<&mut CollisionResultArr, (With<SnakeScopeTag>, Without<SnakeTag>)>,
+    mut scopeQuery: Query<(&mut CollisionResultArr), (With<SnakeScopeTag>, Without<SnakeTag>)>,
     mut animationQuery: Query<&mut AnimationMachine, With<SnakeAnimationTag>>,
 ) {
     let timeLineRaw = timeLine.0;
 
     // let mut instanceQuery = set.p0();
-    for (entity, mut trans, mut collisionResultArr, mut snakeAi, children) in instanceQuery.iter_mut() {
+    for (
+        entity,
+        mut trans,
+        mut collisionResultArr,
+        mut snakeAi,
+        children,
+        mut attackStorehouseArr,
+        mut instanceProps,
+    ) in instanceQuery.iter_mut()
+    {
         let scopeEntityId = children[2];
 
         // feat:相互碰撞
@@ -175,6 +192,18 @@ pub fn snake_step(
             nextLen += _repel(&trans.translation.xy(), &collisionItem.shape.pos, None, None)
         }
         collisionResultArr.arr.clear();
+
+        // hitBox碰撞事件
+        attackStorehouseArr.arr.retain_mut(|e| timeLineRaw < e.nextTime);
+        for attackEvent in attackStorehouseArr.arr.iter_mut() {
+            instanceProps.sub_hp(attackEvent.damage);
+            attackEvent.damage = 0.0;
+            println!("蛇被打到了!!,{:?}", instanceProps.get());
+            if let Some(repelData) = attackEvent.repelData.as_mut() {
+                trans.translation += (repelData.dif * time.delta_seconds());
+            }
+        }
+
         trans.translation.x += nextLen.x;
         trans.translation.y += nextLen.y;
 
@@ -280,6 +309,7 @@ pub fn snake_step(
                 }
             }
         }
+
         scopeCollisionResultArr.arr.clear();
     }
     // 内存泄漏

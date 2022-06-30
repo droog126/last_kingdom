@@ -30,20 +30,24 @@ pub struct RepelData {
     pub timeLen: i32,
 }
 
+// 创建后计算所有范围内的实体后立即销毁
+// todo:创建后一定时间内销毁，或者碰到东西立即销毁 攻击盒子
 pub fn attack_event_distribution_system(
     mut commands: Commands,
     mut query: Query<(Entity, &mut CollisionResultArr, &AttackEvent), With<AttackBoxTag>>,
     mut attackQuery: Query<&mut AttackStorehouseArr, Without<AttackBoxTag>>,
 ) {
     for (entity, mut collisionResultArr, attackEvent) in query.iter_mut() {
+        println!("collisionLen{:?}", collisionResultArr.arr.len());
+
         for item in collisionResultArr.arr.iter() {
             if let Ok(mut attackStorehouseArr) = attackQuery.get_mut(item.id) {
                 attackStorehouseArr.arr.push(attackEvent.clone());
             }
         }
-
+        // 释放后立即销毁
         collisionResultArr.arr.clear();
-        commands.entity(entity).despawn();
+        // commands.entity(entity).despawn();
     }
 }
 

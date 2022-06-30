@@ -1,9 +1,10 @@
 use crate::systems;
 use crate::systems::instance::attack::attack_event_distribution_system;
 use crate::systems::instance::instanceType::player::player_create;
-use crate::systems::instance::instanceType::snake::snake_step;
+use crate::systems::instance::instanceType::snake::{snake_create, snake_step};
 use crate::systems::instance::z_depth_step;
 use crate::systems::item::{twoHand_create, twoHand_step};
+use crate::utils::random::random_range;
 use crate::{state::GameState, systems::instance::instanceType::player::player_step};
 use bevy::core::FixedTimestep;
 use bevy::prelude::*;
@@ -43,6 +44,14 @@ fn playing_enter(
     // 暂时在这里创建instance
     let playerId = player_create(&mut commands, &textureAtlasCenter, &imageCenter, 0.0, 0.0);
     twoHand_create(&mut commands, &textureAtlasCenter, &imageCenter, playerId, 10.0, 10.0);
+
+    snake_create(
+        &mut commands,
+        &textureAtlasCenter,
+        &imageCenter,
+        random_range(-100.0, 100.0),
+        random_range(-100.0, 100.0),
+    );
 }
 
 fn playing_setup() {

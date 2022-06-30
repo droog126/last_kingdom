@@ -119,7 +119,7 @@ pub fn twoHand_step(
                 twoHandConfig.nextTime = timeLineRaw + twoHandConfig.cd;
             }
         }
-        println!("{:?}", twoHandConfig.nextTime);
+        // println!("{:?}", twoHandConfig.nextTime);
         //todo 杀一只蛇
     }
 }
