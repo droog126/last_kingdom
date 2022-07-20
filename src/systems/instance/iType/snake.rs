@@ -1,6 +1,6 @@
 use crate::state::loading::{ImageCenter, TextureAtlasCenter};
 use crate::systems::debug::DebugStatus;
-use crate::systems::instance::animation::{AnimationMachine, AnimationValue, StateChangeEvt, StateInfo};
+use crate::systems::instance::animation::{AnimationInfo, AnimationMachine, AnimationValue, StateChangeEvt};
 use crate::systems::instance::attack::{create_attack_box, AttackEventPart, AttackStorehouseArr, RepelData};
 use crate::systems::instance::basicCreate::{create_instance_collision, create_scope_collision};
 use crate::systems::instance::collision::{CollisionResultArr, _repel};
@@ -37,12 +37,12 @@ enum AiState {
 }
 
 // 配置
-fn getSnakeSprite(animationValue: &AnimationValue) -> StateInfo {
+fn getSnakeSprite(animationValue: &AnimationValue) -> AnimationInfo {
     match *animationValue {
-        AnimationValue::Idle => StateInfo { startIndex: 0, endIndex: 7, spriteName: "snake".to_string() },
-        AnimationValue::Walk => StateInfo { startIndex: 8, endIndex: 15, spriteName: "snake".to_string() },
-        AnimationValue::Attack => StateInfo { startIndex: 16, endIndex: 21, spriteName: "snake".to_string() },
-        _ => StateInfo { startIndex: 0, endIndex: 0, spriteName: "snake".to_string() },
+        AnimationValue::Idle => AnimationInfo { startIndex: 0, endIndex: 7, spriteName: "snake".to_string() },
+        AnimationValue::Walk => AnimationInfo { startIndex: 8, endIndex: 15, spriteName: "snake".to_string() },
+        AnimationValue::Attack => AnimationInfo { startIndex: 16, endIndex: 21, spriteName: "snake".to_string() },
+        _ => AnimationInfo { startIndex: 0, endIndex: 0, spriteName: "snake".to_string() },
     }
 }
 fn snakeCollisionExclude(

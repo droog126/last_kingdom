@@ -4,7 +4,8 @@ pub mod animation;
 pub mod attack;
 pub mod basicCreate;
 pub mod collision;
-pub mod instanceType;
+pub mod factory;
+pub mod iType;
 pub mod props;
 
 // 标识实体

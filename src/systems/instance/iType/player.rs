@@ -1,7 +1,7 @@
 use crate::state::loading::{ImageCenter, TextureAtlasCenter};
 use crate::systems::debug::DebugStatus;
 use crate::systems::input::InsInput;
-use crate::systems::instance::animation::{AnimationMachine, AnimationValue, StateChangeEvt, StateInfo};
+use crate::systems::instance::animation::{AnimationInfo, AnimationMachine, AnimationValue, StateChangeEvt};
 use crate::systems::instance::attack::AttackStorehouseArr;
 use crate::systems::instance::basicCreate::create_instance_collision;
 use crate::systems::instance::collision::{CollisionResultArr, _repel};
@@ -22,11 +22,11 @@ pub struct PlayerAnimationTag;
 #[derive(Component)]
 pub struct PlayerTag;
 
-fn getPlayerSprite(animationValue: &AnimationValue) -> StateInfo {
+fn getPlayerSprite(animationValue: &AnimationValue) -> AnimationInfo {
     match *animationValue {
-        AnimationValue::Idle => StateInfo { startIndex: 0, endIndex: 0, spriteName: "player".to_string() },
-        AnimationValue::Walk => StateInfo { startIndex: 8, endIndex: 15, spriteName: "player".to_string() },
-        _ => StateInfo { startIndex: 0, endIndex: 0, spriteName: "player".to_string() },
+        AnimationValue::Idle => AnimationInfo { startIndex: 0, endIndex: 0, spriteName: "player".to_string() },
+        AnimationValue::Walk => AnimationInfo { startIndex: 8, endIndex: 15, spriteName: "player".to_string() },
+        _ => AnimationInfo { startIndex: 0, endIndex: 0, spriteName: "player".to_string() },
     }
 }
 

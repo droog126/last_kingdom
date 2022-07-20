@@ -5,7 +5,7 @@ use crate::utils::num::MyQueue;
 use super::{
     debug::DebugStatus,
     input::InsInput,
-    instance::instanceType::player::{GLobalPlayerID, PlayerTag},
+    instance::iType::player::{PlayerTag},
 };
 
 #[derive(Component)]

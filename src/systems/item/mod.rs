@@ -8,10 +8,10 @@ use crate::{
 use super::{
     camera::{CursorDiff, CursorPosition},
     instance::{
-        animation::{AnimationMachine, AnimationValue, StateInfo},
+        animation::{AnimationInfo, AnimationMachine, AnimationValue},
         attack::{create_attack_box, AttackEventPart, RepelData},
         basicCreate::create_instance_collision,
-        instanceType::{player::PlayerTag, InstanceCamp, InstanceType},
+        iType::{player::PlayerTag, InstanceCamp, InstanceType},
     },
     timeLine::TimeLine,
 };
@@ -30,11 +30,11 @@ pub struct TwoHandConfig {
     pub nextTime: i32,
 }
 
-fn get_twoHand_sprite(animationValue: &AnimationValue) -> StateInfo {
+fn get_twoHand_sprite(animationValue: &AnimationValue) -> AnimationInfo {
     match *animationValue {
-        AnimationValue::Idle => StateInfo { startIndex: 0, endIndex: 0, spriteName: "twoHand".to_string() },
-        AnimationValue::Walk => StateInfo { startIndex: 8, endIndex: 15, spriteName: "twoHand".to_string() },
-        _ => StateInfo { startIndex: 0, endIndex: 0, spriteName: "twoHand".to_string() },
+        AnimationValue::Idle => AnimationInfo { startIndex: 0, endIndex: 0, spriteName: "twoHand".to_string() },
+        AnimationValue::Walk => AnimationInfo { startIndex: 8, endIndex: 15, spriteName: "twoHand".to_string() },
+        _ => AnimationInfo { startIndex: 0, endIndex: 0, spriteName: "twoHand".to_string() },
     }
 }
 pub fn twoHand_create(

@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use crate::{
     state::loading::{ImageCenter, TextureAtlasCenter},
     // instance::snake::snake_create_raw,
-    systems::{camera::CursorPosition, instance::instanceType::snake::snake_create},
+    systems::{camera::CursorPosition, instance::iType::snake::snake_create},
     utils::random::{random_arr4, random_range},
 };
 

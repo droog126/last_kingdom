@@ -1,13 +1,14 @@
 use crate::systems;
 use crate::systems::instance::attack::attack_event_distribution_system;
-use crate::systems::instance::instanceType::player::player_create;
-use crate::systems::instance::instanceType::snake::{snake_create, snake_step};
+use crate::systems::instance::iType::player::player_create;
+use crate::systems::instance::iType::snake::{snake_create, snake_step};
 use crate::systems::instance::z_depth_step;
 use crate::systems::item::{twoHand_create, twoHand_step};
 use crate::utils::random::random_range;
-use crate::{state::GameState, systems::instance::instanceType::player::player_step};
-use bevy::core::FixedTimestep;
+use crate::{state::GameState, systems::instance::iType::player::player_step};
+// use bevy::core::FixedTimestep;
 use bevy::prelude::*;
+use bevy::sprite::Anchor;
 
 use super::loading::{ImageCenter, TextureAtlasCenter};
 
@@ -39,8 +40,14 @@ fn playing_enter(
     imageCenter: Res<ImageCenter>,
 ) {
     println!("游戏开始");
-    let texture: Handle<Image> = asset_server.load("title/firstUser/png/Level_0.png");
-    commands.spawn_bundle(SpriteBundle { texture: texture.clone(), ..default() });
+    // mapTag
+    let texture: Handle<Image> = asset_server.load("background/main1.png");
+    commands.spawn_bundle(SpriteBundle {
+        texture: texture.clone(),
+        // 精灵锚点
+        sprite: Sprite { anchor: Anchor::Center, ..default() },
+        ..default()
+    });
     // 暂时在这里创建instance
     let playerId = player_create(&mut commands, &textureAtlasCenter, &imageCenter, 0.0, 0.0);
     twoHand_create(&mut commands, &textureAtlasCenter, &imageCenter, playerId, 10.0, 10.0);

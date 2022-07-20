@@ -3,7 +3,7 @@ use crate::utils::num::y_to_z;
 use super::{
     attack::AttackStorehouseArr,
     collision::{CollisionExcludeFunction, CollisionInput, CollisionResultArr, CollisionShape},
-    instanceType::*,
+    iType::*,
     props::InstanceProps,
     InstanceCollisionTag,
 };

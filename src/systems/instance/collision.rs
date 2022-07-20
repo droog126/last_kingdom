@@ -6,7 +6,7 @@ use broccoli::{
     tree::{bbox, node::ManySwappable},
 };
 
-use super::instanceType::{
+use super::iType::{
     CollisionType, CollisionTypeValue, InstanceCamp, InstanceCampValue, InstanceType, InstanceTypeValue,
 };
 

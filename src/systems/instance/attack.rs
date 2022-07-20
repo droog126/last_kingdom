@@ -1,7 +1,7 @@
 use crate::utils::num::y_to_z;
 
 use super::collision::{CollisionExcludeFunction, CollisionInput, CollisionResultArr, CollisionShape};
-use super::instanceType::*;
+use super::iType::*;
 use bevy::prelude::*;
 
 #[derive(Component)]
@@ -38,8 +38,6 @@ pub fn attack_event_distribution_system(
     mut attackQuery: Query<&mut AttackStorehouseArr, Without<AttackBoxTag>>,
 ) {
     for (entity, mut collisionResultArr, attackEvent) in query.iter_mut() {
-        println!("collisionLen{:?}", collisionResultArr.arr.len());
-
         for item in collisionResultArr.arr.iter() {
             if let Ok(mut attackStorehouseArr) = attackQuery.get_mut(item.id) {
                 attackStorehouseArr.arr.push(attackEvent.clone());
@@ -47,9 +45,12 @@ pub fn attack_event_distribution_system(
         }
         // 释放后立即销毁
         collisionResultArr.arr.clear();
-        // commands.entity(entity).despawn();
+        commands.entity(entity).despawn();
     }
 }
+
+// 提交到实例创建工厂里
+pub fn create_instance(commands: &mut Commands, imageHandle: Handle<Image>, x: f32, y: f32) {}
 
 pub fn create_attack_box(
     commands: &mut Commands,
