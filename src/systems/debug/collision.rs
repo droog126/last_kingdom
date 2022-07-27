@@ -1,15 +1,13 @@
 use bevy::{ecs::schedule::ShouldRun, prelude::*};
 
-use super::DebugStatus;
-pub struct CollisionDebugPlugin;
-impl Plugin for CollisionDebugPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_startup_system(startup)
-            .add_system_set(SystemSet::new().with_system(first).with_run_criteria(need_run));
-    }
-}
+use crate::systems::instance::factory::{DynInstanceTag, StaInstanceTag};
 
-fn need_run(debugStatus: Res<DebugStatus>) -> ShouldRun {
+use super::DebugStatus;
+
+pub fn collision_debug_create(app: &mut App) {
+    app.add_system_set(SystemSet::new().with_system(show_collision).with_run_criteria(if_show_collision));
+}
+pub fn if_show_collision(debugStatus: Res<DebugStatus>) -> ShouldRun {
     if debugStatus.collision_debug {
         ShouldRun::Yes
     } else {
@@ -17,18 +15,13 @@ fn need_run(debugStatus: Res<DebugStatus>) -> ShouldRun {
     }
 }
 
-fn startup(mut commands: Commands) {}
-
-fn first(
-    mut commands: Commands,
-    mut query: Query<&mut Visibility>,
-    mut debugStatus: ResMut<DebugStatus>,
-    mut local: Local<bool>,
+pub fn show_collision(
+    mut query: Query<(&mut Visibility, AnyOf<(&DynInstanceTag, &StaInstanceTag)>)>,
+    input: Res<Input<KeyCode>>,
 ) {
-    if *local != debugStatus.collision_debug {
-        *local = debugStatus.collision_debug;
-        for mut visible in query.iter_mut() {
-            visible.is_visible = debugStatus.collision_debug;
+    if input.just_pressed(KeyCode::Key1) {
+        for (mut visible, _) in query.iter_mut() {
+            visible.is_visible = !visible.is_visible;
         }
     }
 }

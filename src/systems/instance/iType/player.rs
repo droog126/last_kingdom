@@ -3,7 +3,7 @@ use crate::systems::debug::DebugStatus;
 use crate::systems::input::InsInput;
 use crate::systems::instance::animation::{AnimationInfo, AnimationMachine, AnimationValue, StateChangeEvt};
 use crate::systems::instance::attack::AttackStorehouseArr;
-use crate::systems::instance::basicCreate::create_instance_collision;
+use crate::systems::instance::basicCreate::create_dyn_collision;
 use crate::systems::instance::collision::{CollisionResultArr, _repel};
 use crate::systems::instance::props::{BasicProps, InstanceProps};
 use crate::systems::timeLine::{self, TimeLine};
@@ -22,7 +22,7 @@ pub struct PlayerAnimationTag;
 #[derive(Component)]
 pub struct PlayerTag;
 
-fn getPlayerSprite(animationValue: &AnimationValue) -> AnimationInfo {
+pub fn getPlayerSprite(animationValue: &AnimationValue) -> AnimationInfo {
     match *animationValue {
         AnimationValue::Idle => AnimationInfo { startIndex: 0, endIndex: 0, spriteName: "player".to_string() },
         AnimationValue::Walk => AnimationInfo { startIndex: 8, endIndex: 15, spriteName: "player".to_string() },
@@ -30,7 +30,7 @@ fn getPlayerSprite(animationValue: &AnimationValue) -> AnimationInfo {
     }
 }
 
-fn playerCollisionExclude(
+pub fn playerCollisionExclude(
     instanceType: &InstanceType,
     collisionType: &CollisionType,
     instanceCamp: &InstanceCamp,
@@ -41,6 +41,9 @@ fn playerCollisionExclude(
         true
     }
 }
+
+pub type CollisionBoxExcludeFunction =
+    fn(instanceType: &InstanceType, collisionType: &CollisionType, instanceCamp: &InstanceCamp) -> bool;
 
 pub fn player_create(
     mut commands: &mut Commands,
@@ -71,16 +74,21 @@ pub fn player_create(
         .id();
 
     // 人物实体
-    let instanceId = create_instance_collision(
+    let instanceId = create_dyn_collision(
         &mut commands,
-        InstanceType::Player,
-        InstanceCamp::Friendly,
-        Some(playerCollisionExclude),
         x,
         y,
         10.0,
         10.0,
-        InstanceProps::new(BasicProps {
+        InstanceType::Player,
+        InstanceCamp::Friendly,
+        Some(playerCollisionExclude),
+    );
+
+    commands
+        .entity(instanceId)
+        .insert(InsInput { ..Default::default() })
+        .insert(InstanceProps::new(BasicProps {
             hp: 20.,
             energy: 20.,
             speed: 200.,
@@ -89,12 +97,7 @@ pub fn player_create(
             maxEnergy: 20.,
             maxSpeed: 200.,
             maxBouncing: 400.,
-        }),
-    );
-
-    commands
-        .entity(instanceId)
-        .insert(InsInput { ..Default::default() })
+        }))
         .insert(PlayerTag)
         .insert(Name::new("player"));
 
@@ -114,8 +117,8 @@ pub fn player_step(
             &mut Transform,
             &mut InstanceProps,
             &InsInput,
-            &mut CollisionResultArr,
-            &mut AttackStorehouseArr,
+            // &mut CollisionResultArr,
+            // &mut AttackStorehouseArr,
             &Children,
         ),
         With<PlayerTag>,
@@ -132,9 +135,8 @@ pub fn player_step(
 
     let mut nextLen = Vec2::splat(0.0);
 
-    for (mut trans, mut instanceProps, input, mut collisionResultArr, mut attackStorehouseArr, children) in
-        query.iter_mut()
-    {
+    // for (mut trans, mut instanceProps, input, mut collisionResultArr, mut attackStorehouseArr, children) in
+    for (mut trans, mut instanceProps, input, children) in query.iter_mut() {
         let props = instanceProps.get();
         let animationInstanceId = children[0];
         if input.dir.length() == 0.0 {
@@ -154,24 +156,24 @@ pub fn player_step(
         }
 
         // println!("看看当前碰撞结果{:?}", collisionResultArr);
-        for collisionItem in collisionResultArr.arr.iter() {
-            nextLen += _repel(&trans.translation.xy(), &collisionItem.shape.pos, None, None)
-        }
-        collisionResultArr.arr.clear();
+        // for collisionItem in collisionResultArr.arr.iter() {
+        //     nextLen += _repel(&trans.translation.xy(), &collisionItem.shape.pos, None, None)
+        // }
+        // collisionResultArr.arr.clear();
 
         trans.translation.x += nextLen.x;
         trans.translation.y += nextLen.y;
 
         // 处理攻击事件仓库
 
-        attackStorehouseArr.arr.retain_mut(|e| timeLineRaw < e.nextTime);
-        for attackEvent in attackStorehouseArr.arr.iter_mut() {
-            instanceProps.sub_hp(attackEvent.damage);
-            attackEvent.damage = 0.0;
-            if let Some(repelData) = attackEvent.repelData.as_mut() {
-                trans.translation += (repelData.dif * time.delta_seconds());
-            }
-        }
+        // attackStorehouseArr.arr.retain_mut(|e| timeLineRaw < e.nextTime);
+        // for attackEvent in attackStorehouseArr.arr.iter_mut() {
+        //     instanceProps.sub_hp(attackEvent.damage);
+        //     attackEvent.damage = 0.0;
+        //     if let Some(repelData) = attackEvent.repelData.as_mut() {
+        //         trans.translation += (repelData.dif * time.delta_seconds());
+        //     }
+        // }
         // attackStorehouseArr.arr.clear();
     }
 }

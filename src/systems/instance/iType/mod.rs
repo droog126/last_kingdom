@@ -7,6 +7,7 @@ pub mod snake;
 pub enum InstanceType {
     Player,
     Snake,
+    Tree,
     Wall,
 }
 

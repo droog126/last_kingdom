@@ -2,11 +2,7 @@ use bevy::{prelude::*, render::camera::RenderTarget};
 
 use crate::utils::num::MyQueue;
 
-use super::{
-    debug::DebugStatus,
-    input::InsInput,
-    instance::iType::player::{PlayerTag},
-};
+use super::{debug::DebugStatus, input::InsInput, instance::iType::player::PlayerTag};
 
 #[derive(Component)]
 pub struct MainCameraTag;
@@ -90,14 +86,14 @@ fn camera_step(
             }
 
             // 任务:debug控制相机
-            if (debugStatus.camera_debug && dir != None) {
+            if debugStatus.camera_debug && dir != None {
                 let unwrapDir = dir.unwrap();
                 camera_transform.translation.x += unwrapDir.x;
                 camera_transform.translation.y += unwrapDir.y;
             }
 
             // 任务:跟随玩家
-            if (!debugStatus.camera_debug && playerPosition != None) {
+            if !debugStatus.camera_debug && playerPosition != None {
                 let mut unwrapPlayerPosition = playerPosition.unwrap();
                 unwrapPlayerPosition.z = camera_transform.translation.z;
 

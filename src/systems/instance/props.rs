@@ -52,7 +52,7 @@ pub struct ItemPropsSendData {
 }
 
 // 设计数值
-#[derive(Debug, Component)]
+#[derive(Debug, Component, Clone)]
 pub struct InstanceProps {
     basicProps: BasicProps,
     realProps: RealProps,

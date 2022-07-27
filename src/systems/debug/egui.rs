@@ -6,6 +6,8 @@ use bevy_inspector_egui::{Inspectable, RegisterInspectable, WorldInspectorPlugin
 
 use bevy_egui::{egui, EguiContext};
 
+use super::DebugStatus;
+
 pub struct DebugTable {
     pub fps: Option<f64>,
     pub collisionCount: Option<usize>,
@@ -24,13 +26,11 @@ impl Plugin for EGuiPlugin {
     }
 }
 
-fn debug_table_step(mut egui_ctx: ResMut<EguiContext>, debugTable: Res<DebugTable>) {
+fn debug_table_step(mut egui_ctx: ResMut<EguiContext>, debugTable: Res<DebugTable>, debugSwitch: Res<DebugStatus>) {
     egui::Window::new("ebugTable").show(egui_ctx.ctx_mut(), |ui| {
         ui.label(format!("fps:{:.2}", debugTable.fps.unwrap_or(0.0)));
-        ui.label(format!(
-            "collisionCount:{:?}",
-            debugTable.collisionCount.unwrap_or(0)
-        ));
+        ui.label(format!("collisionCount:{:?}", debugTable.collisionCount.unwrap_or(0)));
         ui.label(format!("timeLine:{:?}", debugTable.timeLine.unwrap_or(0)));
+        ui.label(format!("{:?}", *debugSwitch));
     });
 }

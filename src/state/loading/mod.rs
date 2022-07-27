@@ -14,6 +14,7 @@ impl FromWorld for TextureAtlasCenter {
     }
 }
 
+#[derive(Deref, DerefMut)]
 pub struct ImageCenter(pub HashMap<String, Handle<Image>>);
 impl FromWorld for ImageCenter {
     fn from_world(world: &mut World) -> Self {
@@ -78,4 +79,15 @@ fn startup(
     // shadow
     let mut imageHandle = asset_server.load("shadow/shadow.png");
     imageCenter.0.insert("shadow".to_string(), imageHandle.clone());
+
+    // map
+    let mut imageHandle: Handle<Image> = asset_server.load("background/main1.png");
+    imageCenter.0.insert("map".to_string(), imageHandle.clone());
+
+    // tree
+    let mut imageHandle: Handle<Image> = asset_server.load("sprite/staInstance/tree1.png");
+    imageCenter.0.insert("tree1".to_string(), imageHandle.clone());
+
+    let mut imageHandle: Handle<Image> = asset_server.load("sprite/staInstance/tree2.png");
+    imageCenter.0.insert("tree2".to_string(), imageHandle.clone());
 }

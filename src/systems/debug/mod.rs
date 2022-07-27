@@ -1,7 +1,9 @@
+use std::fmt::Display;
+
 use crate::systems::debug::fps::FpsText;
 use bevy::{diagnostic::FrameTimeDiagnosticsPlugin, prelude::*};
 
-use self::{egui::DebugTable, origin::exclusive_system_debug};
+use self::{collision::collision_debug_create, egui::DebugTable, origin::exclusive_system_debug};
 
 pub mod collision;
 pub mod egui;
@@ -10,6 +12,7 @@ pub mod instance;
 mod origin;
 
 pub struct DebugPlugin;
+#[derive(Debug, Clone)]
 pub struct DebugStatus {
     pub fps_show: bool,
     pub camera_debug: bool,
@@ -17,6 +20,7 @@ pub struct DebugStatus {
     pub debug_info: bool,
     pub instance_debug: bool,
 }
+
 impl FromWorld for DebugStatus {
     fn from_world(world: &mut World) -> Self {
         DebugStatus {
@@ -44,9 +48,9 @@ impl Plugin for DebugPlugin {
 
         #[cfg(debug_assertions)]
         {
+            collision_debug_create(app);
             app.add_plugin(FrameTimeDiagnosticsPlugin::default())
                 .add_plugin(egui::EGuiPlugin)
-                .add_plugin(collision::CollisionDebugPlugin)
                 .add_plugin(instance::InstanceDebugPlugin);
             app.add_stage_before(CoreStage::Update, "origin_debug", SystemStage::parallel())
                 .add_system_to_stage("origin_debug", exclusive_system_debug.exclusive_system());
@@ -55,11 +59,7 @@ impl Plugin for DebugPlugin {
 }
 
 fn startup(mut commands: Commands, asset_server: Res<AssetServer>) {
-    commands.insert_resource(DebugTable {
-        fps: None,
-        collisionCount: None,
-        timeLine: None,
-    });
+    commands.insert_resource(DebugTable { fps: None, collisionCount: None, timeLine: None });
 }
 
 fn debug_switch(

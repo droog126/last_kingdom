@@ -2,7 +2,7 @@ use crate::state::loading::{ImageCenter, TextureAtlasCenter};
 use crate::systems::debug::DebugStatus;
 use crate::systems::instance::animation::{AnimationInfo, AnimationMachine, AnimationValue, StateChangeEvt};
 use crate::systems::instance::attack::{create_attack_box, AttackEventPart, AttackStorehouseArr, RepelData};
-use crate::systems::instance::basicCreate::{create_instance_collision, create_scope_collision};
+use crate::systems::instance::basicCreate::{create_dyn_collision, create_scope_collision};
 use crate::systems::instance::collision::{CollisionResultArr, _repel};
 use crate::systems::instance::props::{BasicProps, InstanceProps};
 use crate::systems::timeLine::TimeLine;
@@ -37,7 +37,7 @@ enum AiState {
 }
 
 // 配置
-fn getSnakeSprite(animationValue: &AnimationValue) -> AnimationInfo {
+pub fn getSnakeSprite(animationValue: &AnimationValue) -> AnimationInfo {
     match *animationValue {
         AnimationValue::Idle => AnimationInfo { startIndex: 0, endIndex: 7, spriteName: "snake".to_string() },
         AnimationValue::Walk => AnimationInfo { startIndex: 8, endIndex: 15, spriteName: "snake".to_string() },
@@ -45,7 +45,7 @@ fn getSnakeSprite(animationValue: &AnimationValue) -> AnimationInfo {
         _ => AnimationInfo { startIndex: 0, endIndex: 0, spriteName: "snake".to_string() },
     }
 }
-fn snakeCollisionExclude(
+pub fn snakeCollisionExclude(
     instanceType: &InstanceType,
     collisionType: &CollisionType,
     instanceCamp: &InstanceCamp,
@@ -57,7 +57,7 @@ fn snakeCollisionExclude(
     }
 }
 
-fn snakeScopeCollisionExclude(
+pub fn snakeScopeCollisionExclude(
     instanceType: &InstanceType,
     collisionType: &CollisionType,
     instanceCamp: &InstanceCamp,
@@ -99,16 +99,21 @@ pub fn snake_create(
         .id();
 
     // 人物实体
-    let instanceId = create_instance_collision(
+    let instanceId = create_dyn_collision(
         &mut commands,
-        InstanceType::Snake,
-        InstanceCamp::Hostile,
-        Some(snakeCollisionExclude),
         x,
         y,
         20.0,
         10.0,
-        InstanceProps::new(BasicProps {
+        InstanceType::Snake,
+        InstanceCamp::Hostile,
+        Some(snakeCollisionExclude),
+    );
+    commands
+        .entity(instanceId)
+        .insert(Name::new("snake"))
+        .insert(SnakeTag)
+        .insert(InstanceProps::new(BasicProps {
             hp: 20.,
             energy: 20.,
             speed: 300.,
@@ -117,12 +122,7 @@ pub fn snake_create(
             maxEnergy: 20.,
             maxSpeed: 300.,
             maxBouncing: 400.,
-        }),
-    );
-    commands
-        .entity(instanceId)
-        .insert(Name::new("snake"))
-        .insert(SnakeTag)
+        }))
         .insert(SnakeAi { target: None, state: AiState::Daze });
 
     // 侦查盒子

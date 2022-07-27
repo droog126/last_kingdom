@@ -17,7 +17,7 @@ fn main() {
         .insert_resource(WindowDescriptor {
             width: config.width(),
             height: config.height(),
-            title: "LastKingdom".to_string(), // ToDo
+            title: "LastKingdom".to_string(),
             present_mode: PresentMode::Immediate,
             resizable: true,
             ..Default::default()
