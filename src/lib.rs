@@ -45,3 +45,17 @@ impl Plugin for GamePlugin {
         std::any::type_name::<Self>()
     }
 }
+
+#[macro_export]
+macro_rules! add_events{
+    ($a:ident,$b:ty)=>{
+        {
+            $a.add_event::<$b>()
+        }
+    };
+    ($a:ident,$b:ty $(,$c:ty)*)=> {
+        {
+            add_events!($a, $b); add_events!($a $(,$c)*)
+        }
+    }
+}

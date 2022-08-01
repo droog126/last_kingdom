@@ -70,7 +70,6 @@ fn playing_enter(
         instanceCamp: InstanceCamp::Friendly,
         name: Name::new("player"),
         ext: ExtInstanceParam::HostPlayer {},
-        // 通过默认值省略
         spriteOffset: Vec2::new(0.0, -4.0),
     }));
 
