@@ -47,8 +47,9 @@ pub fn create_collision(
             shape: CollisionShape { widthHalf: width / 2.0, heightHalf: height / 2.0, pos: Vec2::new(x, y) },
         })
         .insert(CollisionResultArr { arr: vec![] })
-        .insert(AttackStorehouseArr { arr: vec![] })
-        .insert(Visibility { is_visible: false });
+        .insert(AttackStorehouseArr { arr: vec![] });
+    // todo
+    // .insert(ComputedVisibility { is_visible_in_hierarchy: false, is_visible_in_view: false });
 
     return collisionId;
 }

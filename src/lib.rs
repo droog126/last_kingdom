@@ -9,23 +9,18 @@ mod state;
 mod systems;
 mod utils;
 
-use state::loading::LoadingPlugin;
-use state::menu::MenuPlugin;
-use state::playing::PlayingPlugin;
+use bevy::render::texture::ImageSettings;
+use state::loading::loading_start;
 use state::GameState;
 
 use bevy::app::App;
 use bevy::app::Plugin;
 use bevy::prelude::*;
+use state::playing::playing_start;
 pub struct GamePlugin;
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app
-            // 阶段
-            .add_state(GameState::Loading)
-            .add_plugin(LoadingPlugin)
-            .add_plugin(MenuPlugin)
-            .add_plugin(PlayingPlugin)
             // 总线系统
             .add_stage_before(CoreStage::Update, "origin", SystemStage::parallel())
             .add_system_to_stage("origin", state::origin::exclusive_system.exclusive_system())
@@ -38,11 +33,10 @@ impl Plugin for GamePlugin {
             .add_plugin(systems::timeLine::TimeLinePlugin)
             .add_plugin(systems::debug::DebugPlugin);
 
-        // 总线系统
-    }
-
-    fn name(&self) -> &str {
-        std::any::type_name::<Self>()
+        // 阶段
+        app.add_state(GameState::Loading);
+        loading_start(app);
+        playing_start(app);
     }
 }
 

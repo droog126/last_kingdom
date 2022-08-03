@@ -91,7 +91,7 @@ pub fn collision_step(world: &mut World) {
         mut collisionResultArr,
     ) in query.iter_mut(world)
     {
-        collisionInput.shape.pos = globalTransform.translation.xy();
+        collisionInput.shape.pos = globalTransform.translation().xy();
         let shape = &collisionInput.shape;
         let rect = Rect::new(
             shape.pos.x - shape.widthHalf,

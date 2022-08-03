@@ -1,10 +1,7 @@
-use bevy::utils::HashMap;
-
 use crate::state::GameState;
-use bevy::prelude::*;
-use bevy_asset_loader::{AssetCollection, AssetLoader};
-
-pub struct LoadingPlugin;
+use bevy::asset::HandleId;
+use bevy::utils::HashMap;
+use bevy::{asset::LoadState, prelude::*};
 
 pub struct TextureAtlasCenter(pub HashMap<String, Handle<TextureAtlas>>);
 impl FromWorld for TextureAtlasCenter {
@@ -14,7 +11,6 @@ impl FromWorld for TextureAtlasCenter {
     }
 }
 
-#[derive(Deref, DerefMut)]
 pub struct ImageCenter(pub HashMap<String, Handle<Image>>);
 impl FromWorld for ImageCenter {
     fn from_world(world: &mut World) -> Self {
@@ -23,54 +19,73 @@ impl FromWorld for ImageCenter {
     }
 }
 
-/// This plugin loads all assets using [AssetLoader] from a third party bevy plugin
-/// Alternatively you can write the logic to load assets yourself
-/// If interested, take a look at https://bevy-cheatbook.github.io/features/assets.html
-impl Plugin for LoadingPlugin {
-    fn build(&self, app: &mut App) {
-        AssetLoader::new(GameState::Loading)
-            .with_collection::<FontAssets>()
-            .continue_to_state(GameState::Menu)
-            .build(app);
-
-        app.init_resource::<TextureAtlasCenter>().init_resource::<ImageCenter>().add_startup_system(startup);
+pub struct FontCenter(pub HashMap<String, Handle<Font>>);
+impl FromWorld for FontCenter {
+    fn from_world(world: &mut World) -> Self {
+        let mut assertCenter: HashMap<String, Handle<Font>> = HashMap::new();
+        FontCenter(assertCenter)
     }
 }
+pub struct AssertLoadState(Vec<Handle<Image>>);
 
-//这些都在Res里面
-#[derive(AssetCollection)]
-pub struct FontAssets {
-    #[asset(path = "fonts/FiraSans-Bold.ttf")]
-    pub fira_sans: Handle<Font>,
+pub fn loading_start(app: &mut App) {
+    app.init_resource::<TextureAtlasCenter>()
+        .init_resource::<ImageCenter>()
+        .init_resource::<FontCenter>();
+
+    app.add_system_set(SystemSet::on_enter(GameState::Loading).with_system(loading_enter));
+    app.add_system_set(SystemSet::on_update(GameState::Loading).with_system(loading_update));
 }
 
-fn startup(
+fn loading_enter(
     mut textureAtlasCenter: ResMut<TextureAtlasCenter>,
     mut imageCenter: ResMut<ImageCenter>,
+    mut fontCenter: ResMut<FontCenter>,
     asset_server: Res<AssetServer>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
 ) {
     // snake
     let texture_handle = asset_server.load("sprite/snake_sheet.png");
-    let sprite_atlas =
-        TextureAtlas::from_grid_with_padding(texture_handle.clone(), Vec2::new(32.0, 32.0), 8, 5, Vec2::new(0.0, 0.0));
+    let sprite_atlas = TextureAtlas::from_grid_with_padding(
+        texture_handle.clone(),
+        Vec2::new(32.0, 32.0),
+        8,
+        5,
+        Vec2::new(0.0, 0.0),
+        Vec2::ZERO,
+    );
     let sprite_handle = texture_atlases.add(sprite_atlas);
     textureAtlasCenter.0.insert("snake".to_string(), sprite_handle);
+    imageCenter.0.insert("snake".to_string(), texture_handle.clone());
 
     // player
 
     let texture_handle = asset_server.load("sprite/player_sheet.png");
-    let sprite_atlas =
-        TextureAtlas::from_grid_with_padding(texture_handle.clone(), Vec2::new(32.0, 50.0), 8, 2, Vec2::new(0.0, 0.0));
+    let sprite_atlas = TextureAtlas::from_grid_with_padding(
+        texture_handle.clone(),
+        Vec2::new(32.0, 50.0),
+        8,
+        2,
+        Vec2::new(0.0, 0.0),
+        Vec2::ZERO,
+    );
     let sprite_handle = texture_atlases.add(sprite_atlas);
     textureAtlasCenter.0.insert("player".to_string(), sprite_handle);
+    imageCenter.0.insert("player".to_string(), texture_handle.clone());
 
     // hand
     let texture_handle = asset_server.load("sprite/twoHand_sheet.png");
-    let sprite_atlas =
-        TextureAtlas::from_grid_with_padding(texture_handle.clone(), Vec2::new(12.0, 7.0), 8, 2, Vec2::new(0.0, 0.0));
+    let sprite_atlas = TextureAtlas::from_grid_with_padding(
+        texture_handle.clone(),
+        Vec2::new(12.0, 7.0),
+        8,
+        2,
+        Vec2::new(0.0, 0.0),
+        Vec2::ZERO,
+    );
     let sprite_handle = texture_atlases.add(sprite_atlas);
     textureAtlasCenter.0.insert("twoHand".to_string(), sprite_handle);
+    imageCenter.0.insert("twoHand".to_string(), texture_handle.clone());
 
     // circle
     let mut imageHandle = asset_server.load("basicShape/circle.png");
@@ -90,4 +105,20 @@ fn startup(
 
     let mut imageHandle: Handle<Image> = asset_server.load("sprite/staInstance/tree2.png");
     imageCenter.0.insert("tree2".to_string(), imageHandle.clone());
+
+    // font
+    let mut fontHandle = asset_server.load("fonts/FiraSans-Bold.ttf");
+    fontCenter.0.insert("default".to_string(), fontHandle.clone());
+}
+
+fn loading_update(
+    mut gameState: ResMut<State<GameState>>,
+    imageCenter: Res<ImageCenter>,
+    textureAtlasCenter: Res<TextureAtlasCenter>,
+    asset_server: Res<AssetServer>,
+) {
+    let mut handles = imageCenter.0.iter().map(|(k, v)| HandleId::from(v));
+    if let LoadState::Loaded = asset_server.get_group_load_state(handles) {
+        gameState.set(GameState::Playing).unwrap();
+    }
 }

@@ -65,15 +65,16 @@ fn startup(mut commands: Commands, asset_server: Res<AssetServer>) {
 fn debug_switch(
     input: Res<Input<KeyCode>>,
     mut debugStatus: ResMut<DebugStatus>,
-    mut query: Query<(&mut Visibility, With<FpsText>)>,
+    mut query: Query<(&mut ComputedVisibility, With<FpsText>)>,
 ) {
     if (input.just_pressed(KeyCode::F11)) {
         debugStatus.fps_show = !debugStatus.fps_show;
         debugStatus.debug_info = !debugStatus.debug_info;
 
-        for (mut visibility, i) in query.iter_mut() {
-            visibility.is_visible = !visibility.is_visible;
-        }
+        // todo
+        // for (mut visibility, i) in query.iter_mut() {
+        //     visibility.is_visible = !visibility.is_visible;
+        // }
     }
 
     if (input.just_pressed(KeyCode::F3)) {

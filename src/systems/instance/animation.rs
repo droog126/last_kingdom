@@ -1,7 +1,7 @@
 use std::fmt;
 
-use bevy::core::FixedTimestep;
 use bevy::prelude::*;
+use bevy::time::FixedTimestep;
 use bevy::utils::hashbrown::HashMap;
 
 use crate::state::loading::TextureAtlasCenter;

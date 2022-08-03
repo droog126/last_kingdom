@@ -1,6 +1,6 @@
-use bevy::{core::FixedTimestep, prelude::*};
-
 use super::debug::egui::DebugTable;
+use bevy::{prelude::*, time::FixedTimestep};
+use bevy_derive::{Deref, DerefMut};
 pub struct TimeLinePlugin;
 
 #[derive(Deref, DerefMut)]
@@ -8,11 +8,8 @@ pub struct TimeLine(pub i32);
 
 impl Plugin for TimeLinePlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(startup).add_system_set(
-            SystemSet::new()
-                .with_system(step)
-                .with_run_criteria(FixedTimestep::step(1.0 / 60.0)),
-        );
+        app.add_startup_system(startup)
+            .add_system_set(SystemSet::new().with_system(step).with_run_criteria(FixedTimestep::step(1.0 / 60.0)));
     }
 }
 fn startup(mut commands: Commands) {

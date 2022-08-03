@@ -17,11 +17,7 @@ impl Plugin for CollisionDebugPlugin {
     fn build(&self, app: &mut App) {
         app.add_startup_system(startup)
             .add_system(step)
-            .add_system_set(
-                SystemSet::new()
-                    .with_system(step)
-                    .with_run_criteria(need_run),
-            );
+            .add_system_set(SystemSet::new().with_system(step).with_run_criteria(need_run));
     }
 }
 
@@ -40,7 +36,6 @@ fn step(mut commands: Commands, debugStatus: Res<DebugStatus>) {}
 
 use crate::systems::collision::CollisionDynTag;
 use bevy::{ecs::schedule::ShouldRun, prelude::*};
-use bevy_prototype_lyon::prelude::*;
 use rand::prelude::*;
 
 use super::DebugStatus;
@@ -49,11 +44,7 @@ impl Plugin for CollisionDebugPlugin {
     fn build(&self, app: &mut App) {
         app.add_startup_system(startup)
             // .add_system(step)
-            .add_system_set(
-                SystemSet::new()
-                    .with_system(trigger)
-                    .with_run_criteria(need_run),
-            );
+            .add_system_set(SystemSet::new().with_system(trigger).with_run_criteria(need_run));
     }
 }
 
@@ -67,15 +58,8 @@ fn need_run(debugStatus: Res<DebugStatus>) -> ShouldRun {
 
 fn startup(mut commands: Commands) {}
 
-fn trigger(
-    mut commands: Commands,
-    query: Query<Entity, With<CollisionDynTag>>,
-    mut debugStatus: ResMut<DebugStatus>,
-) {
-    let shape = shapes::Rectangle {
-        extents: Vec2::new(20.0, 10.0),
-        origin: RectangleOrigin::Center,
-    };
+fn trigger(mut commands: Commands, query: Query<Entity, With<CollisionDynTag>>, mut debugStatus: ResMut<DebugStatus>) {
+    let shape = shapes::Rectangle { extents: Vec2::new(20.0, 10.0), origin: RectangleOrigin::Center };
 
     for entity in query.iter() {
         commands.entity(entity).with_children(|child| {

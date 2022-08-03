@@ -1,6 +1,6 @@
-use bevy::core::FixedTimestep;
 use bevy::diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin};
 use bevy::prelude::*;
+use bevy::time::FixedTimestep;
 
 use crate::state::GameState;
 
@@ -18,21 +18,13 @@ impl Plugin for FpsPlugin {
         #[cfg(not(debug_assertions))]
         {
             app.add_startup_system(fps_text_startup);
-            app.add_system_set(
-                SystemSet::new()
-                    .with_run_criteria(FixedTimestep::step(0.5))
-                    .with_system(fps_show),
-            );
+            app.add_system_set(SystemSet::new().with_run_criteria(FixedTimestep::step(0.5)).with_system(fps_show));
             app.add_system(fps_get);
         }
 
         #[cfg(debug_assertions)]
         {
-            app.add_system_set(
-                SystemSet::new()
-                    .with_run_criteria(FixedTimestep::step(0.5))
-                    .with_system(fps_get),
-            );
+            app.add_system_set(SystemSet::new().with_run_criteria(FixedTimestep::step(0.5)).with_system(fps_get));
         }
     }
 }
@@ -51,11 +43,7 @@ fn fps_text_startup(mut commands: Commands, asset_server: Res<AssetServer>) {
         .spawn_bundle(TextBundle {
             style: Style {
                 position_type: PositionType::Absolute,
-                position: Rect {
-                    bottom: Val::Px(40.0),
-                    left: Val::Px(5.0),
-                    ..Default::default()
-                },
+                position: UiRect { bottom: Val::Px(40.0), left: Val::Px(5.0), ..Default::default() },
                 ..Default::default()
             },
             text: Text {
@@ -76,11 +64,7 @@ fn fps_text_startup(mut commands: Commands, asset_server: Res<AssetServer>) {
         .spawn_bundle(TextBundle {
             style: Style {
                 position_type: PositionType::Absolute,
-                position: Rect {
-                    bottom: Val::Px(5.0),
-                    left: Val::Px(5.0),
-                    ..Default::default()
-                },
+                position: UiRect { bottom: Val::Px(5.0), left: Val::Px(5.0), ..Default::default() },
                 ..Default::default()
             },
             text: Text {
@@ -101,10 +85,7 @@ fn fps_text_startup(mut commands: Commands, asset_server: Res<AssetServer>) {
 
 fn fps_show(
     diagnostics: Res<Diagnostics>,
-    mut set: ParamSet<(
-        Query<&mut Text, With<FpsText>>,
-        Query<&mut Text, With<GameStateText>>,
-    )>,
+    mut set: ParamSet<(Query<&mut Text, With<FpsText>>, Query<&mut Text, With<GameStateText>>)>,
     gameState: Res<State<GameState>>,
     debugTable: Res<DebugTable>,
     time: Res<Time>,

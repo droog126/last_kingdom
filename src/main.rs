@@ -3,6 +3,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use bevy::prelude::*;
+use bevy::render::texture::ImageSettings;
 use bevy::window::PresentMode;
 use bevy::DefaultPlugins;
 use last_kingdom::config::Config;
@@ -12,7 +13,8 @@ fn main() {
     let config = Config::new("config.ini");
 
     let mut app = App::new();
-    app.insert_resource(Msaa { samples: 4 })
+    app.insert_resource(ImageSettings::default_nearest()) // prevents blurry sprites
+        .insert_resource(Msaa { samples: 4 })
         .insert_resource(ClearColor(Color::rgb(0.4, 0.4, 0.4)))
         .insert_resource(WindowDescriptor {
             width: config.width(),

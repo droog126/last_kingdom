@@ -33,7 +33,7 @@ impl Plugin for CameraPlugin {
 }
 
 fn camera_create(mut commands: Commands) {
-    let mut camera = OrthographicCameraBundle::new_2d();
+    let mut camera = Camera2dBundle::default();
     camera.transform.scale.x = 0.5;
     camera.transform.scale.y = 0.5;
     commands.spawn_bundle(camera).insert(MainCameraTag);
@@ -57,7 +57,7 @@ fn camera_step(
 
     for (insInput, playerTransform) in set.p1().iter() {
         dir = Some(insInput.dir.clone());
-        playerPosition = Some(playerTransform.translation);
+        playerPosition = Some(playerTransform.translation());
     }
 
     // 捕获鼠标在Camera的坐标
@@ -71,7 +71,7 @@ fn camera_step(
                 let ndc = (screen_pos / window_size) * 2.0 - Vec2::ONE;
 
                 // matrix for undoing the projection and camera transform
-                let ndc_to_world = camera_transform.compute_matrix() * camera.projection_matrix.inverse();
+                let ndc_to_world = camera_transform.compute_matrix() * camera.projection_matrix().inverse();
 
                 let world_pos = ndc_to_world.project_point3(ndc.extend(-1.0));
 

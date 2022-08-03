@@ -66,9 +66,9 @@ pub fn create_attack_box(
 ) -> Entity {
     let collisionId = commands
         .spawn()
-        .insert(GlobalTransform { ..default() })
+        // .insert(GlobalTransform { ..default() })
         .insert(Transform { translation: Vec3::new(x, y, y_to_z(y)), ..default() })
-        .insert(Visibility { ..default() })
+        // .insert(ComputedVisibility { ..default() })
         .insert(imageHandle)
         .insert(Sprite { ..default() })
         .id();
